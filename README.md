@@ -7,7 +7,7 @@
 
 ## Как запустить
 
-- **Проще всего:** скачать `docs/index.html` и открыть двойным щелчком в Chrome, Edge, Firefox или Safari (нужен WebGL2).
+- **Проще всего:** скачать архив [`docs/mellstroynost-3d.zip`](docs/mellstroynost-3d.zip) (320 КБ), распаковать и открыть `Mellstroynost-3D.html` двойным щелчком в Chrome, Edge, Firefox или Safari (нужен WebGL2). Это тот же файл, что и `docs/index.html`.
 - **Локальный сервер:** `npm run serve` → <http://localhost:8080>.
 - **GitHub Pages:** в настройках репозитория включить Pages из папки `/docs` — игра откроется по адресу `https://<user>.github.io/potatopls/`.
 - **Телефон:** открыть ту же страницу и повернуть телефон горизонтально; сенсорное управление включится само.
@@ -49,6 +49,7 @@
 npm install
 npm run build   # src/ -> docs/index.html (three.js + esbuild, всё в одном файле)
 npm run dev     # пересборка при изменениях + сервер на :8080
+npm run pack    # сборка + архив docs/mellstroynost-3d.zip
 ```
 
 Параметры адреса для отладки: `?q=0..3` — качество, `?touch` — сенсорное управление на ПК, `?lv=<глава>&cp=<точка>` — начать с главы
