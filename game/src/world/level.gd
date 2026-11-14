@@ -11,7 +11,7 @@ const ENVS := {
 	"snow": {"top": Color(0.55, 0.62, 0.74), "hor": Color(0.86, 0.88, 0.92), "gnd": Color(0.8, 0.82, 0.86), "sun": Color(1.0, 0.92, 0.84), "sun_e": 0.62, "rot": Vector3(-28, -50, 0), "amb": 0.4, "fog": Color(0.84, 0.87, 0.92), "fog_d": 0.011, "day": true},
 	"night": {"top": Color(0.015, 0.02, 0.06), "hor": Color(0.06, 0.07, 0.16), "gnd": Color(0.02, 0.02, 0.04), "sun": Color(0.5, 0.6, 1.0), "sun_e": 0.28, "rot": Vector3(-55, 40, 0), "amb": 0.55, "fog": Color(0.07, 0.08, 0.17), "fog_d": 0.012, "day": false},
 	"fog": {"top": Color(0.42, 0.45, 0.5), "hor": Color(0.6, 0.62, 0.66), "gnd": Color(0.4, 0.42, 0.45), "sun": Color(0.8, 0.84, 0.95), "sun_e": 0.5, "rot": Vector3(-60, 10, 0), "amb": 0.85, "fog": Color(0.6, 0.62, 0.66), "fog_d": 0.035, "day": true},
-	"grave": {"top": Color(0.02, 0.05, 0.05), "hor": Color(0.1, 0.2, 0.16), "gnd": Color(0.03, 0.05, 0.04), "sun": Color(0.55, 0.9, 0.7), "sun_e": 0.3, "rot": Vector3(-50, -20, 0), "amb": 0.6, "fog": Color(0.1, 0.2, 0.16), "fog_d": 0.03, "day": false},
+	"grave": {"top": Color(0.03, 0.05, 0.06), "hor": Color(0.13, 0.19, 0.18), "gnd": Color(0.04, 0.05, 0.05), "sun": Color(0.74, 0.9, 0.82), "sun_e": 0.32, "rot": Vector3(-50, -20, 0), "amb": 0.65, "fog": Color(0.11, 0.17, 0.16), "fog_d": 0.026, "day": false},
 	"indoor": {"bg": Color(0.02, 0.02, 0.03), "sun_e": 0.0, "amb_col": Color(0.42, 0.42, 0.5), "amb": 0.75, "fog": Color(0.05, 0.05, 0.07), "fog_d": 0.0, "day": false},
 }
 const _FACES := [
@@ -144,13 +144,6 @@ func set_env(nm: String, o := {}) -> void:
 	env.ambient_light_energy = e.get("amb", 0.7)
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_white = 1.0
-	if G.opts.has("tm"):
-		env.tonemap_mode = int(G.opts["tm"]) as Environment.ToneMapper
-	if G.opts.has("nofog"):
-		e["fog_d"] = 0.0
-	if G.opts.has("bgcol"):
-		env.background_mode = Environment.BG_COLOR
-		env.background_color = Color(0.1, 0.3, 0.1)
 	env.fog_enabled = float(e.get("fog_d", 0.0)) > 0.0
 	env.fog_light_color = e.get("fog", Color(0.6, 0.7, 0.8))
 	env.fog_density = e.get("fog_d", 0.0)

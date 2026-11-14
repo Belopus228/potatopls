@@ -54,3 +54,19 @@ func run(t) -> void:
 		if Snd._stream(Snd.SFX_DIR, x) == null:
 			miss.append("sfx/" + x)
 	t.ok(miss.is_empty(), "музыка и звуки на месте: 10 дорожек, 33 эффекта" if miss.is_empty() else "нет звуков: " + str(miss))
+	# «Удар с вертухи»: четвёртый удар серии появляется только с купленным предметом
+	var seen_heavy := [false, false]
+	for round in 2:
+		if round == 1:
+			G.give("heavy")
+		await t.sim(1.0)
+		for i in 9:
+			Inp.press("attack")
+			await t.sim(0.06)
+			Inp.release("attack")
+			for k in 4:
+				await t.sim(0.05)
+				if G.player.state == "attack" and G.player.cur_hit == G.player.HEAVY:
+					seen_heavy[round] = true
+	t.ok(not seen_heavy[0] and seen_heavy[1], "вертуха: без предмета её нет, с предметом идёт четвёртым ударом (%s)" % str(seen_heavy))
+	t.ok(G.player.model.ap.has_animation("Kick_Left"), "у героя есть анимация вертухи")

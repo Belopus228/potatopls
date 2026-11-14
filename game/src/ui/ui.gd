@@ -400,6 +400,14 @@ func choose(who: Variant, text: String, options: Array) -> int:
 
 
 func _process(dt: float) -> void:
+	# пока висит заставка главы или босса, подсказки уезжают под неё, а не ложатся поверх
+	var want := 96.0
+	if title_box.modulate.a > 0.03 and title_box.get_child_count() > 0:
+		want = 328.0
+	if absf(toasts.offset_top - want) > 0.5:
+		var h := toasts.offset_bottom - toasts.offset_top
+		toasts.offset_top = lerpf(toasts.offset_top, want, minf(1.0, dt * 14.0))
+		toasts.offset_bottom = toasts.offset_top + h
 	if dlg.visible and dlg_text.visible_characters >= 0:
 		var total := dlg_text.get_total_character_count()
 		var before := dlg_text.visible_characters

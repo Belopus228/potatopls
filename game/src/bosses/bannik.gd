@@ -12,7 +12,7 @@ var stone_t := 0.0
 
 func _init() -> void:
 	var m := Model.creature("yeti", 3.4, {"Yeti_Main": Color("d8705a"), "Yeti_Secondary": Color("f0c0a0")})
-	init_boss("Банник", 820.0, m, 1.1, 3.2)
+	init_boss("Банник", 760.0, m, 1.1, 3.2)
 	base_guard = 0.3
 	guard = 0.3
 	arena_r = 12.5
@@ -47,7 +47,7 @@ func _ai(dt: float) -> void:
 						volleys = 2 if phase == 1 else 3
 						set_state("steam")
 					_:
-						stones_left = 5 if phase == 1 else 8
+						stones_left = 5 if phase == 1 else 7
 						stone_t = 0.3
 						set_state("stones")
 						play("Weapon", 0.1, 1.0, true)
@@ -75,7 +75,7 @@ func _ai(dt: float) -> void:
 				Snd.sfx("crash", 0.0, 0.7)
 				Fx.dust(get_parent(), global_position + Vector3(0, 0.4, 0))
 				blast(global_position, 2.6, 16.0, 11.0)
-				ring_start(global_position, 8.5, 20.0, 11.0, Color(1.0, 0.45, 0.2))
+				ring_start(global_position, 8.5, 20.0, 9.0, Color(1.0, 0.45, 0.2))
 				slams_left -= 1
 				play("Jump_Land", 0.05, 1.0, true)
 				set_state("slam_r")
@@ -89,7 +89,7 @@ func _ai(dt: float) -> void:
 					play("Duck", 0.1, 1.2, true)
 				else:
 					set_state("tired")
-					open(3.0 if phase == 1 else 2.6, "ОТДЫШКА! БЕЙ!")
+					open(3.2 if phase == 1 else 2.9, "ОТДЫШКА! БЕЙ!")
 					play("Duck", 0.2, 0.5, true)
 		"tired":
 			_stop(dt)
@@ -116,7 +116,7 @@ func _ai(dt: float) -> void:
 				var lead := Vector3(p.velocity.x, 0, p.velocity.z) * 0.45
 				var at := clamp_arena(p.global_position + lead + Vector3(randf_range(-1.4, 1.4), 0, randf_range(-1.4, 1.4)), 0.5)
 				at.y = global_position.y
-				drop(at, 2.1, 0.95, 12.0, Color(1.0, 0.5, 0.2))
+				drop(at, 2.0, 1.0, 10.0, Color(1.0, 0.5, 0.2))
 				Snd.sfx("throw", -3.0, 0.7)
 			if stones_left <= 0 and st > 0.6 and drops.is_empty():
 				set_state("rest")

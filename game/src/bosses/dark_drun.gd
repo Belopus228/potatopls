@@ -11,7 +11,7 @@ var cycle := 0
 func _init() -> void:
 	var m := Model.human(Cast.look_of("dark"))
 	m.scale = Vector3.ONE * 1.22
-	init_boss("Тёмный Друн", 700.0, m, 0.48, 2.15)
+	init_boss("Тёмный Друн", 660.0, m, 0.48, 2.15)
 	base_guard = 0.35
 	guard = 0.35
 	m.set_emission(Color(0.35, 0.18, 0.75), 0.9)
@@ -83,7 +83,7 @@ func _ai(dt: float) -> void:
 			_stop(dt, 40.0)
 			if st >= 0.2 and not hit_once:
 				hit_once = true
-				blast(global_position + fwd() * 1.0, 1.5, 10.0 if hits_left > 1 else (14.0 if phase == 2 else 12.0), 7.0)
+				blast(global_position + fwd() * 1.0, 1.5, 8.0 if hits_left > 1 else (12.0 if phase == 2 else 10.0), 7.0)
 				Snd.sfx("swing", -4.0, 0.8)
 			if st >= 0.42:
 				hits_left -= 1
@@ -122,7 +122,7 @@ func _ai(dt: float) -> void:
 			_stop(dt, 40.0)
 			if st >= 0.3 and not hit_once:
 				hit_once = true
-				if not blast(global_position + fwd() * 1.1, 1.7, 15.0, 9.0):
+				if not blast(global_position + fwd() * 1.1, 1.7, 13.0, 9.0):
 					open(1.3, "ПРОМАЗАЛ! БЕЙ!")
 				Snd.sfx("swing", -2.0, 0.7)
 			if st >= 0.75:
@@ -144,7 +144,7 @@ func _ai(dt: float) -> void:
 		"hamam_w":
 			_stop(dt)
 			if st >= 0.8:
-				ring_start(global_position, 9.0, 22.0, 12.0)
+				ring_start(global_position, 9.0, 22.0, 10.0)
 				G.cam.shake(0.5)
 				Snd.sfx("am", 0.0, 0.6)
 				set_state("rest")

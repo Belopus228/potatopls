@@ -316,6 +316,8 @@ func _st_attack(dt: float, _wish: Vector3) -> void:
 		_do_hit()
 	if state_t >= float(cur_hit["next"]) and combo_queued and combo_i < COMBO.size() - 1 and cur_hit != HEAVY:
 		_start_attack(combo_i + 1)
+	elif state_t >= float(cur_hit["next"]) and combo_queued and combo_i == COMBO.size() - 1 and cur_hit != HEAVY and G.has("heavy"):
+		_start_attack(COMBO.size(), true)   # «Удар с вертухи»: четвёртый удар серии
 	elif state_t >= float(cur_hit["next"]) and Inp.hit("dodge") and st >= 12.0:
 		_start_roll(Vector3.ZERO)
 	elif state_t >= float(cur_hit["dur"]):
