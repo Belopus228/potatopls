@@ -1,4 +1,4 @@
-// usage: [MOBILE=1 DSF=2] node play.mjs <url> [WxH] cmd...   cmds: w:ms  s:file.png  d:Key u:Key k:Key  e:js  c:x,y  m:x,y  t:x,y (tap)  ts:x,y tm:x,y te: (touch start/move/end)
+// usage: [MOBILE=1 DSF=2] node play.mjs <url> [WxH] cmd...   cmds: w:ms  s:file.png  d:Key u:Key k:Key  e:js  c:x,y  m:x,y  md:left|right mu:left|right  t:x,y (tap)  ts:x,y tm:x,y te: (touch start/move/end)
 import puppeteer from 'puppeteer-core';
 const [url, size, ...cmds] = process.argv.slice(2); const [w, h] = size.split('x').map(Number);
 // браузер: свой Chrome/Chromium через CHROME_PATH, иначе @sparticuz/chromium (Linux x64, нужен AWS_LAMBDA_JS_RUNTIME=nodejs22.x)
@@ -15,6 +15,7 @@ for (const c of cmds) {
   try {
     if (k === 'w') await sleep(+v); else if (k === 's') await p.screenshot({ path: v }); else if (k === 'd') await p.keyboard.down(v); else if (k === 'u') await p.keyboard.up(v); else if (k === 'k') { await p.keyboard.press(v); }
     else if (k === 'e') { const r = await p.evaluate(v); if (r !== undefined) console.log('[eval]', JSON.stringify(r)); } else if (k === 'c') { const [x, y] = v.split(',').map(Number); await p.mouse.click(x, y); } else if (k === 'm') { const [x, y] = v.split(',').map(Number); await p.mouse.move(x, y); }
+    else if (k === 'md') { await p.mouse.down({ button: v || 'left' }); } else if (k === 'mu') { await p.mouse.up({ button: v || 'left' }); }
     else if (k === 't') { const [x, y] = v.split(',').map(Number); await p.touchscreen.tap(x, y); } else if (k === 'ts') { const [x, y] = v.split(',').map(Number); await p.touchscreen.touchStart(x, y); } else if (k === 'tm') { const [x, y] = v.split(',').map(Number); await p.touchscreen.touchMove(x, y); } else if (k === 'te') { await p.touchscreen.touchEnd(); }
   } catch (e) { console.log('[cmderr]', c.slice(0, 60), String(e).slice(0, 300)); }
 }

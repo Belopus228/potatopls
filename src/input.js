@@ -16,18 +16,21 @@ export class Input {
     addEventListener('blur', () => { this.keys = {}; });
     canvas.addEventListener('mousedown', e => {
       if (G.touch) return; if (G.mode === 'play' && !this.locked) { this.lock(); this.drag = true; }
-      if (G.mode !== 'play') { G.ui && G.ui.click(); return; } const a = e.button === 0 ? 'attack' : e.button === 2 ? 'throw' : 'dodge'; this.pressed[a] = true; this.keys[a] = true; e.preventDefault();
+      if (G.mode !== 'play') { G.ui && G.ui.click(); return; } const a = this.btn(e.button); if (a) { this.pressed[a] = true; this.keys[a] = true; } e.preventDefault();
     });
     addEventListener('mouseup', e => { this.drag = false; const a = e.button === 0 ? 'attack' : e.button === 2 ? 'throw' : 'dodge'; this.keys[a] = false; });
     addEventListener('mousemove', e => { if (this.locked || this.drag) { this.look.x += e.movementX || 0; this.look.y += e.movementY || 0; } });
     canvas.addEventListener('contextmenu', e => e.preventDefault());
     addEventListener('wheel', e => { if (G.mode === 'play' && G.cam) G.cam.zoom(e.deltaY > 0 ? 1 : -1); }, { passive: true });
-    document.addEventListener('pointerlockchange', () => { const was = this.locked; this.locked = document.pointerLockElement === canvas; if (was && !this.locked && G.mode === 'play' && !this.freeing) G.game.pause(); this.freeing = false; });
-    document.addEventListener('pointerlockerror', () => { this.locked = false; });
+    document.addEventListener('pointerlockchange', () => { const was = this.locked; this.locked = document.pointerLockElement === canvas; if (this.locked) { this.everLocked = true; this.noLock = false; } if (was && !this.locked && G.mode === 'play' && !this.freeing) G.game.pause(); this.freeing = false; });
+    document.addEventListener('pointerlockerror', () => { this.locked = false; this.lockFail(); });
     addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && !G.touch) this.setTouch(true); }, true);
     this.buildTouch();
   }
-  lock() { if (G.touch || this.locked) return; try { const p = this.canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
+  lock() { if (G.touch || this.locked) return; try { const p = this.canvas.requestPointerLock(); if (p && p.catch) p.catch(() => this.lockFail()); } catch (e) { this.lockFail(); } }
+  // захват мыши недоступен (например, игра во встроенном окне): камера — перетаскиванием, правая кнопка только крутит
+  lockFail() { if (this.everLocked || this.noLock || G.touch) return; this.noLock = true; if (G.ui && G.mode === 'play') G.ui.toast('Мышь не захватилась: зажми правую кнопку и тяни — камера. Бросок — F', 'hint'); }
+  btn(b) { return b === 0 ? 'attack' : b === 2 ? (this.noLock ? null : 'throw') : 'dodge'; }
   unlock() { if (this.locked) { this.freeing = true; document.exitPointerLock(); } }
   setTouch(v) { G.touch = v; document.body.classList.toggle('touch', v); if (v) this.unlock(); }
   press(a) { this.pressed[a] = true; }
