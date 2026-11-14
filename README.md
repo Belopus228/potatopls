@@ -52,6 +52,9 @@ npm run dev     # пересборка при изменениях + серве�
 npm run pack    # сборка + архив docs/mellstroynost-3d.zip
 ```
 
+Архив можно выложить на [tmpfiles.org](https://tmpfiles.org/) автоматически: это делает задача GitHub Actions `.github/workflows/upload-tmpfiles.yml`
+(запускается при обновлении архива в рабочей ветке или вручную), ссылка появляется в Summary запуска. Ссылки tmpfiles.org живут 60 минут.
+
 Параметры адреса для отладки: `?q=0..3` — качество, `?touch` — сенсорное управление на ПК, `?lv=<глава>&cp=<точка>` — начать с главы
 (`dorm`, `murino`, `milk`, `myt`, `banya`, `final`), `?god` — бессмертие, `?nodyn` — без авто-разрешения.
 
