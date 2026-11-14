@@ -28,13 +28,14 @@ var id := ""
 var title := ""
 var chapter := ""
 var music := ""
+var env_name := "day"
 var steps := ""                 # звук шагов: "" (асфальт, бетон), wood, grass, snow, carpet
 var _fight_t := 0.0             # сколько секунд подряд идёт драка
 var _calm_t := 0.0              # сколько секунд после неё прошло
 var cps := {}
 var kill_y := -25.0
 var is_day := true
-var env_name := "day"
+var _amb_col := Color(0.4, 0.4, 0.45)
 var inter: Array = []
 var trigs: Array = []
 var ticks: Array[Callable] = []
@@ -143,11 +144,13 @@ func _update_fight(dt: float, p: Player) -> void:
 # ---------- окружение ----------
 
 func set_env(nm: String, o := {}) -> void:
-	env_name = nm
 	var e: Dictionary = ENVS[nm].duplicate()
 	for k in o:
 		e[k] = o[k]
 	is_day = e.get("day", true)
+	env_name = nm
+	if G.ui and G.ui.grade:
+		G.ui.grade.apply_env(nm)
 	if e.has("bg"):
 		env.background_mode = Environment.BG_COLOR
 		env.background_color = e["bg"]

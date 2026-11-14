@@ -165,6 +165,9 @@ func _physics_process(dt: float) -> void:
 		Snd.sfx("land", -6.0)
 		Fx.dust(get_parent(), global_position)
 	_was_floor = now_floor
+	if blob == null and get_parent():
+		make_blob(1.0, 0.55)
+	update_blob(global_position.y if now_floor else safe_ground())
 	if now_floor and (trail.is_empty() or (trail[-1] as Vector3).distance_to(global_position) > 0.7):
 		trail.append(global_position)
 		if trail.size() > 60:
@@ -648,3 +651,4 @@ func _find_near(ctl: bool) -> void:
 		if score < best:
 			best = score
 			near = it
+

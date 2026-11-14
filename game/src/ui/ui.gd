@@ -16,6 +16,7 @@ static var _f_bold: Font
 var root: Control
 var hud: Hud
 var touch_pad: TouchPad
+var grade: Grade
 var fade: ColorRect
 var fade_lbl: Label
 var toasts: VBoxContainer
@@ -108,6 +109,8 @@ func _ready() -> void:
 	root.add_child(hud)
 	touch_pad = TouchPad.new()
 	root.add_child(touch_pad)
+	grade = Grade.new()
+	add_child(grade)
 	_build_dialog()
 	_build_misc()
 	apply_settings()

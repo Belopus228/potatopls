@@ -77,6 +77,13 @@ func _ready() -> void:
 	G.ents.append(self)
 	floor_max_angle = deg_to_rad(50.0)
 	_make_bar()
+	if not boss:
+		make_blob(1.0, 0.45)
+
+
+func _process(_dt: float) -> void:
+	if blob and not dead:
+		update_blob(safe_ground())
 
 
 func _exit_tree() -> void:
