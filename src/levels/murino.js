@@ -19,7 +19,8 @@ export const DRUN_LOOK = { face: photoTex(FACE.drun), top: 0x2a8a4a, sleeve: 'lo
 
 // ---------- ТЁМНЫЙ ДРУН ----------
 class DarkDrun extends Boss {
-  constructor(x, y, z) { super(x, y, z, { name: 'ТЁМНЫЙ ДРУН', hp: 700, r: .6, h: 2.4, mass: 5, solidR: .5, guard: .45, body: makeHuman({ face: photoTex(FACE.dark), top: 0x121214, style: 'puffer', sleeve: 'long', hairStyle: 'hood', pants: 0x0c0c0e, shoes: 0x111111, scale: 1.28, skin: 0x8a6a60 }) }); this.p2 = false; this.cx = x; this.cz = z; }
+  constructor(x, y, z) { super(x, y, z, { name: 'ТЁМНЫЙ ДРУН', hp: 700, r: .6, h: 2.4, mass: 5, solidR: .5, guard: .45, body: makeHuman({ face: photoTex(FACE.dark), top: 0x121214, style: 'puffer', sleeve: 'long', hairStyle: 'hood', pants: 0x0c0c0e, shoes: 0x111111, scale: 1.28, skin: 0x8a6a60 }) }); this.p2 = false; this.cx = x; this.cz = z;
+    for (const m of this.body.mats) { m.userData.em = new THREE.Color(0x2c1860); m.emissive.copy(m.userData.em); } }   // тёмно-фиолетовое свечение, чтобы силуэт читался ночью
   // после серии на миг открывается
   *tired(t = 1.2) { this.vul = 1.5; _v.set(this.pos.x, this.pos.y + 3.3, this.pos.z); G.fx.text(_v, 'ОТКРЫЛСЯ!', 'good'); this.body.set('crouch'); yield* this.wait(t); this.body.set(null); this.vul = 1; }
   *strike(anim, r, dmg, knock = 8) { this.body.play(anim, anim === 'kick' ? .5 : .32); G.audio.sfx('whoosh'); yield* this.wait(anim === 'kick' ? .2 : .11); const a = this.yaw, x = this.pos.x + Math.sin(a) * 1.3, z = this.pos.z + Math.cos(a) * 1.3; if (Math.abs(this.P.pos.y - this.pos.y) < 2) this.hitCircle(x, z, r, dmg, knock); yield* this.wait(anim === 'kick' ? .3 : .2); }
@@ -72,7 +73,7 @@ LEVELS.murino = {
     for (const z of [53.5, 80.1]) L.box(M.concDark(), 0, RY + .5, z, 95, 1, .5, { solid: false }); for (const x of [-47.4, 47.4]) L.box(M.concDark(), x, RY + .5, 66.8, .5, 1, 27, { solid: false });
     for (const s of [-1, 1]) { L.box(M.ribs('#5a5f66'), s * 26, RY + 1.2, 60, 5, 2.4, 4, { solid: false }); L.box(M.ribs('#5a5f66'), s * 31, RY + .9, 73, 3.4, 1.8, 3.4, { solid: false }); L.cyl(M.metalDark(), s * 24.5, RY + 5, 76, .12, 10, { seg: 6 }); L.sph(glowMat(0xff2020, 3), s * 24.5, RY + 10.1, 76, .22); L.glow(s * 24.5, RY + 10.1, 76, 4, 0xff3030, .6); L.cyl(M.metal(), s * 36, RY + 1.6, 64, 1.6, 3.2, { seg: 12 }); lampPost(L, s * 20.5, 78, RY, 0xbfd0ff, 5, s > 0 ? PI : 0); }
     L.box(M.brick(), 0, RY + 1.7, 77.6, 5, 3.4, 2.6); L.box(M.metal(), 0, RY + 1.25, 76.27, 1.6, 2.5, .08, { solid: false }); L.sign('ЛИВТ', 0, RY + 2.95, 76.25, 1.4, .45, PI, { bg: '#101a10', fg: '#7dff8a', glow: 1.6 }); L.lamp(0, RY + 2.6, 75.2, 0x9dff9a, 22, 12);
-    L.sign('МУРИНО', 0, RY + 3.2, 54.6, 17, 3.6, 0, { bg: 'none', fg: '#7fe0ff', glow: 2.4, stroke: '#04283a' }); L.lamp(-8, RY + 2.5, 56, 0x7fe0ff, 40, 20); L.lamp(8, RY + 2.5, 56, 0x7fe0ff, 40, 20);
+    L.sign('МУРИНО', 0, RY + 3.2, 54.6, 17, 3.6, 0, { bg: 'none', fg: '#7fe0ff', glow: 1.6, stroke: '#04283a' }); L.lamp(-8, RY + 2.5, 56, 0x7fe0ff, 30, 20); L.lamp(8, RY + 2.5, 56, 0x7fe0ff, 30, 20);
     for (let i = 0; i < 5; i++) L.box(C(0x3a4a66, .05, .6, { transparent: true, opacity: .5 }), -14 + i * 7 + r() * 2, RY + .012, 60 + r() * 14, 2 + r() * 2, .02, 1.5 + r() * 2, { solid: false });
     // --- двор ---
     for (const [x, z] of [[-18, -18], [18, -18], [-18, 18], [18, 18]]) lampPost(L, x, z, .07, 0xffc98a, 6.2, x > 0 ? PI : 0);
