@@ -226,7 +226,9 @@ func die(silent := false) -> void:
 	_dead_t = -2.0
 	if on_defeat.is_valid():
 		var cb := on_defeat
-		get_tree().create_timer(1.6, false).timeout.connect(func(): cb.call())
+		get_tree().create_timer(1.6, false).timeout.connect(func():
+			if cb.is_valid():   # уровень могли сменить, пока шла анимация гибели
+				cb.call())
 
 
 ## Пауза между атаками: шагать к игроку, держась лицом к нему.
