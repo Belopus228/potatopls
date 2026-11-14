@@ -68,7 +68,7 @@ npm run pack    # сборка + архив docs/mellstroynost-3d.zip
 
 ### Автотесты
 
-Игра проходится скриптом в headless-Chromium (WebGL через SwiftShader): полное прохождение, пешие маршруты, бои с боссами, меню, сохранения, звук, геймпад, утечки памяти.
+Игра проходится скриптом в headless-Chromium (WebGL через SwiftShader): полное прохождение, пешие маршруты, бои с боссами, меню, сохранения, звук, геймпад, смена качества графики, утечки памяти.
 
 ```bash
 npm install --no-save puppeteer-core @sparticuz/chromium   # или CHROME_PATH=/путь/к/chrome

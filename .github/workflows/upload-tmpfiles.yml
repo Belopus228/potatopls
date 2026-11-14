@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Выложить docs/mellstroynost-3d.zip
         run: |
           set -euo pipefail
@@ -28,31 +28,25 @@ jobs:
           echo "$resp"
           url=$(printf '%s' "$resp" | python3 -c 'import sys, json; print(json.load(sys.stdin)["data"]["url"])')
           url=$(printf '%s' "$url" | sed 's#^http://#https://#')
-          dl=$(printf '%s' "$url" | sed 's#tmpfiles.org/#tmpfiles.org/dl/#')
-          # проверка: скачиваем обратно и сверяем контрольную сумму
-          ok="файл скачивается, sha256 совпадает"
+          # проверка: берём со страницы файла подписанную ссылку на скачивание (она живёт несколько минут),
+          # скачиваем архив обратно и сверяем контрольную сумму
           check="не удалось проверить скачивание"
-          diag=""
-          for try in 1 2 3; do
+          page=$(curl -sSL -A "Mozilla/5.0" "$url") || true
+          dl=$(printf '%s' "$page" | grep -o 'href="[^"]*/dl/[^"]*"' | head -1 | sed 's/^href="//; s/"$//') || true
+          case "$dl" in /*) dl="https://tmpfiles.org$dl" ;; esac
+          if [ -n "$dl" ]; then
             code=$(curl -sSL -A "Mozilla/5.0" -o /tmp/back.bin -w '%{http_code} %{content_type} %{size_download}b' "$dl") || true
             back=$(sha256sum /tmp/back.bin 2>/dev/null | cut -d' ' -f1) || true
-            echo "попытка $try: ответ $code, sha256 $back"
-            if [ "$back" = "$sum" ]; then check="$ok"; break; fi
-            start=$(head -c 240 /tmp/back.bin | tr -c '[:alnum:][:punct:] ' ' ' | tr -s ' ' | sed 's/%/%25/g') || true
-            links=$(curl -sSL -A "Mozilla/5.0" "$url" | grep -o 'href="[^"]*"' | grep -i 'dl\|download\|\.zip' | head -4 | tr '\n' ' ' | sed 's/%/%25/g') || true
-            diag="попытка $try: $code | начало ответа: $start | ссылки на странице файла: $links"
-            sleep 4
-          done
-          if [ "$check" != "$ok" ] && [ -n "$diag" ]; then echo "::notice title=Диагностика::$diag"; fi
+            echo "скачивание: $code, sha256 $back"
+            if [ "$back" = "$sum" ]; then check="файл скачивается, sha256 совпадает"; else check="скачалось не то ($code)"; fi
+          fi
           echo "::notice title=tmpfiles.org::$url"
-          echo "::notice title=tmpfiles.org — прямая ссылка::$dl"
-          echo "::notice title=Проверка::$check ($sum)"
+          echo "::notice title=Проверка::$check"
           {
             echo "### Архив на tmpfiles.org"
             echo
-            echo "- страница: $url"
-            echo "- прямая ссылка: $dl"
+            echo "- ссылка: $url"
             echo "- проверка: $check"
             echo
-            echo "Ссылка живёт 60 минут. Нужна новая — Re-run jobs."
+            echo "Файл хранится на tmpfiles.org 60 минут. Нужна новая ссылка — Re-run jobs."
           } >> "$GITHUB_STEP_SUMMARY"

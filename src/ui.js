@@ -112,7 +112,7 @@ export class UI {
     const S = G.settings, seg = (k, opts) => `<div class="seg">${opts.map((o, i) => `<button data-a="${k}" data-v="${i}" class="${(+S[k] === i || S[k] === !!i && typeof S[k] === 'boolean') ? 'on' : ''}">${o}</button>`).join('')}</div>`, rng = (k, min, max, step) => `<input type="range" data-i="${k}" min="${min}" max="${max}" step="${step}" value="${S[k]}">`;
     this.open('set', `<div class="panel"><h2>НАСТРОЙКИ</h2>
       <div class="opt"><span>Графика<small>${QUAL[S.q].name}: тени, блум, частицы</small></span>${seg('q', ['Низк', 'Сред', 'Выс', 'Ультра'])}</div>
-      <div class="opt"><span>Авто-разрешение<small>снижает чёткость, если мало FPS</small></span>${seg('dyn', ['Выкл', 'Вкл'])}</div>
+      <div class="opt"><span>Авто-разрешение<small>снижает чёткость и качество, если мало FPS</small></span>${seg('dyn', ['Выкл', 'Вкл'])}</div>
       <div class="opt"><span>Громкость эффектов</span>${rng('vol', 0, 1, .05)}</div><div class="opt"><span>Громкость музыки</span>${rng('music', 0, 1, .05)}</div>
       <div class="opt"><span>Чувствительность камеры</span>${rng('sens', .3, 2.5, .05)}</div>
       <div class="opt"><span>Инверсия по вертикали</span>${seg('invY', ['Выкл', 'Вкл'])}</div><div class="opt"><span>Камера сама встаёт за спину</span>${seg('autoCam', ['Выкл', 'Вкл'])}</div>

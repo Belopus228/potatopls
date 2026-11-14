@@ -56,7 +56,7 @@ export class Gfx {
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(500, 24, 16), new THREE.ShaderMaterial({ uniforms: this.skyU, vertexShader: SKY_V, fragmentShader: SKY_F, side: THREE.BackSide, depthWrite: false, fog: false }));
     this.sky.frustumCulled = false; this.sky.renderOrder = -1000; this.scene.add(this.sky);
     this.pmrem = new THREE.PMREMGenerator(r); this.envScene = new THREE.Scene(); this.envSky = new THREE.Mesh(this.sky.geometry, this.sky.material); this.envScene.add(this.envSky);
-    this.slots = []; this.lamps = []; this.focus = new THREE.Vector3(); this.scale = 1; this.fps = 60; this.acc = 0; this.frames = 0; this.good = 0; this.lt = 0;
+    this.slots = []; this.lamps = []; this.focus = new THREE.Vector3(); this.scale = 1; this.fps = 60; this.acc = 0; this.frames = 0; this.good = 0; this.slow = 0; this.lt = 0;
     this.uTime = { value: 0 };           // общий uniform времени для ветра/воды
     this.setQuality(G.q, true);
     addEventListener('resize', () => this.resize()); this.resize();
@@ -131,6 +131,8 @@ export class Gfx {
       if (G.settings && G.settings.dyn && G.mode === 'play') {
         if (this.fps < 27 && this.scale > .55) { this.scale = Math.max(.55, this.scale - .12); this.good = 0; this.resize(); }
         else if (this.fps > 56 && this.scale < 1) { if (++this.good > 4) { this.scale = Math.min(1, this.scale + .08); this.good = 0; this.resize(); } } else this.good = 0;
+        // совсем слабое устройство: разрешение уже минимальное, а кадров всё равно мало — снижаем качество на ступень
+        if (this.fps < 22 && this.scale <= .56 && G.q > 0) { if (++this.slow >= 4) { this.slow = 0; this.scale = .8; G.settings.q = G.q - 1; this.setQuality(G.q - 1); G.game.saveSettings(); G.ui.toast('Мало кадров — графика снижена: «' + QUAL[G.q].name + '»', 'hint'); } } else this.slow = 0;
       }
     }
   }
