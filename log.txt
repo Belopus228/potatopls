@@ -1,1 +1,19 @@
 старт 20:10:18
+flush 20:10:19: 12K
+git-lfs/3.8.1 (GitHub; linux amd64; go 1.27.3)
+kenney-impact-sounds: 552K, файлов 133
+kenney-rpg-audio: 228K, файлов 54
+kenney-interface-sounds: 424K, файлов 103
+kenney-ui-audio: 228K, файлов 54
+kenney-digital-audio: 272K, файлов 65
+kenney-sci-fi-sounds: 316K, файлов 76
+kenney-foley-sounds: 388K, файлов 88
+kenney-casino-audio: 244K, файлов 58
+kenney-music-jingles: 380K, файлов 88
+kenney-voiceover-pack-fighter: 212K, файлов 50
+kenney-retro-sounds-1: 160K, файлов 37
+kenney-retro-sounds-2: 284K, файлов 68
+quaternius-universal-animation-library: 32K, файлов 5
+quaternius-universal-animation-library-2: 36K, файлов 6
+
+kenney/quaternius готово 20:20:23
