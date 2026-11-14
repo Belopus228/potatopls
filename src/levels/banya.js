@@ -21,7 +21,7 @@ class Bannik extends Boss {
   constructor(x, y, z) {
     const body = makeHuman({ face: faceTex({ mood: 'angry', skin: '#d87860', stache: '#f2f2f2', brow: '#f2f2f2' }), top: 0xe9dfc8, style: 'robe', sleeve: 'none', hairStyle: 'banya', beard: 0xf2f2f2, hair: 0xf2f2f2, fat: 1.45, skin: 0xd87860, scale: 2 });
     const br = makeProp('broom'); br.scale.setScalar(1.3); body.hand.add(br);
-    super(x, y, z, { name: 'БАННИК', hp: 860, r: 1.25, h: 3.8, mass: 12, solidR: 1, aimY: 2.2, body }); this.n = 0; this.p2 = false;
+    super(x, y, z, { name: 'БАННИК', hp: 950, r: 1.25, h: 3.8, mass: 12, solidR: 1, aimY: 2.2, guard: .5, body }); this.n = 0; this.p2 = false;
   }
   shout(t, cls = 'alert') { _v.set(this.pos.x, this.pos.y + 4.8, this.pos.z); G.fx.text(_v, t, cls); }
   *tubs(n) {
@@ -197,7 +197,7 @@ LEVELS.banya = {
         boss.body.play('cast', 1.2); G.audio.sfx('roar'); G.cam.shake(.8); G.ui.bigTitle('БАННИК', 'БОСС', 2400); yield* wait(1.3); for (const s of ring) s.off = false; boss.start(); setGoal();
         tip('Встань так, чтобы прорубь была между тобой и Банником, когда он разбегается', 'Встань так, чтобы прорубь была между тобой и Банником, когда он разбегается');
       }, 'cut'));
-      boss.onDefeat = () => { g.setFlag('b_boss'); inv.add('btn3'); G.save.money += 100; for (const s of ring) s.off = true; G.audio.music('banya'); G.audio.sfx('win'); g.checkpoint('yard', true); g.write(); setGoal(); g.script(function* () { yield* lines([[BAN, 'Ох… Уф… Ладно. Хороший пар. Уважил. Забирай кнопку — она ещё тёплая.'], ['ch', 'Кнопка «Б». Третья! Все три. Пора в ливт.'], ['phone', '*бзззз* Дод: «Ч! Ну вот теперь — посидим! Заходи в баньку, пока поез не ушёл».']]); }); };
+      boss.onDefeat = () => { g.setFlag('b_boss'); inv.add('btn3'); g.pay(100); for (const s of ring) s.off = true; G.audio.music('banya'); G.audio.sfx('win'); g.checkpoint('yard', true); g.write(); setGoal(); g.script(function* () { yield* lines([[BAN, 'Ох… Уф… Ладно. Хороший пар. Уважил. Забирай кнопку — она ещё тёплая.'], ['ch', 'Кнопка «Б». Третья! Все три. Пора в ливт.'], ['phone', '*бзззз* Дод: «Ч! Ну вот теперь — посидим! Заходи в баньку, пока поез не ушёл».']]); }); };
     }
     if (f('b_fire') && !f('b_boss')) armBoss();
     L.start = function* (cp) { setGoal(); if (cp === 'start' && !f('b_dod')) { yield* wait(1.2); tip('Банька. Холодно. Где-то впереди должно быть тепло', 'Банька. Холодно. Где-то впереди должно быть тепло'); } };

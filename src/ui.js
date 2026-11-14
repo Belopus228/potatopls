@@ -103,8 +103,9 @@ export class UI {
   }
   confirm(title, text, yes, no) { this.open('confirm', `<div class="panel center"><h2>${title}</h2><p>${text}</p><div class="row" style="justify-content:center"><button class="btn sm pri" data-a="y">Да</button><button class="btn sm" data-a="back">Нет</button></div></div>`); this.handler = a => a === 'y' ? yes() : no(); }
   help(back) {
-    this.open('help', `<div class="panel"><h2>УПРАВЛЕНИЕ</h2><div class="keys">${KEYS.map(k => `<kbd>${k[0]}</kbd><span>${k[1]}</span>`).join('')}</div>
-      <p><b>Телефон:</b> левая половина экрана — стик (тяни дальше, чтобы бежать), правая — камера. Кнопки справа: 👊 удар, ⤒ прыжок, 💨 перекат, 💸 бросок, 🧴 дихлофос, 😱 ульта. Геймпад тоже работает.</p>
+    const keys = `<div class="keys">${KEYS.map(k => `<kbd>${k[0]}</kbd><span>${k[1]}</span>`).join('')}</div>`;
+    const phone = `<p><b>Телефон:</b> левая половина экрана — стик (тяни дальше, чтобы бежать), правая — камера. Кнопки справа: 👊 удар, ⤒ прыжок, 💨 перекат, 💸 бросок, 🧴 дихлофос, 😱 ульта, внизу по центру — еда. Геймпад тоже работает.</p>`;
+    this.open('help', `<div class="panel"><h2>УПРАВЛЕНИЕ</h2>${G.touch ? phone + keys : keys + phone}
       <div class="row"><button class="btn sm pri" data-a="back">Понятно</button></div></div>`); this.handler = () => back();
   }
   settings(back) {

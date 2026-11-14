@@ -14,11 +14,11 @@ import { lines, tip } from '../script.js';
 const GOODS = [{ id: 'bread', price: 8 }, { id: 'doshik', price: 20 }, { id: 'energy', price: 25 }, { id: 'hp', price: 60, max: 1 }];
 LEVELS.dorm = {
   id: 'dorm', title: 'ОБЩАГА', sub: 'ГЛАВА 1', music: 'dorm', seed: 11,
-  env: { indoor: true, bg: 0x08090c, top: 0x343840, hor: 0x565a62, bot: 0x2a2622, fog: [0x101216, 16, 56], hemiSky: 0xc4ccdc, hemiGnd: 0x5a4e40, hemiInt: .62, sun: [.1, 1, .07], sunCol: 0xfff1d6, sunInt: .85, shadowSize: 20, exposure: 1.08, lamp: 4.5, lampCol: 0xffe6c0, envInt: .32, bloom: [.4, .5, .9] },
+  env: { indoor: true, bg: 0x08090c, top: 0x343840, hor: 0x565a62, bot: 0x2a2622, fog: [0x101216, 16, 56], hemiSky: 0xc4ccdc, hemiGnd: 0x5a4e40, hemiInt: .62, sun: [.1, 1, .07], sunCol: 0xfff1d6, sunInt: .85, shadowSize: 20, exposure: 1.08, lamp: 4.5, lampCol: 0xffe6c0, envInt: .32, bloom: [.3, .5, 1.1] },
   build(L) {
     const g = G.game, W = M.wall2('#4c8a6a'), WK = M.wall2('#8a8f6a'), FL = M.lino(), TL = M.bigTiles(), CE = M.ceil(), CN = M.concDark(), H = 3.2;
     if (!g.flag('dormCode')) { const d = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - .5); g.setFlag('dormCode', '' + d[0] + d[1] + d[2]); }
-    const code = g.flag('dormCode');
+    const code = g.flag('dormCode'); L.world.base = -60;   // есть подвал: пол только там, где он построен
     // --- коробка этажа ---
     L.box(FL, -8, -.15, 0, 36, .3, 15.2); L.box(TL, 15, -.15, 0, 10, .3, 15.2); L.box(CE, -3, H + .15, 0, 46, .3, 15.2);
     const gaps = [3, 9, 15, 21, 27, 35].map(c => [c, 1.4]);

@@ -19,26 +19,28 @@ export const DRUN_LOOK = { face: photoTex(FACE.drun), top: 0x2a8a4a, sleeve: 'lo
 
 // ---------- ТЁМНЫЙ ДРУН ----------
 class DarkDrun extends Boss {
-  constructor(x, y, z) { super(x, y, z, { name: 'ТЁМНЫЙ ДРУН', hp: 440, r: .6, h: 2.4, mass: 5, solidR: .5, body: makeHuman({ face: photoTex(FACE.dark), top: 0x121214, style: 'puffer', sleeve: 'long', hairStyle: 'hood', pants: 0x0c0c0e, shoes: 0x111111, scale: 1.28, skin: 0x8a6a60 }) }); this.p2 = false; this.cx = x; this.cz = z; }
+  constructor(x, y, z) { super(x, y, z, { name: 'ТЁМНЫЙ ДРУН', hp: 700, r: .6, h: 2.4, mass: 5, solidR: .5, guard: .45, body: makeHuman({ face: photoTex(FACE.dark), top: 0x121214, style: 'puffer', sleeve: 'long', hairStyle: 'hood', pants: 0x0c0c0e, shoes: 0x111111, scale: 1.28, skin: 0x8a6a60 }) }); this.p2 = false; this.cx = x; this.cz = z; }
+  // после серии на миг открывается
+  *tired(t = 1.2) { this.vul = 1.5; _v.set(this.pos.x, this.pos.y + 3.3, this.pos.z); G.fx.text(_v, 'ОТКРЫЛСЯ!', 'good'); this.body.set('crouch'); yield* this.wait(t); this.body.set(null); this.vul = 1; }
   *strike(anim, r, dmg, knock = 8) { this.body.play(anim, anim === 'kick' ? .5 : .32); G.audio.sfx('whoosh'); yield* this.wait(anim === 'kick' ? .2 : .11); const a = this.yaw, x = this.pos.x + Math.sin(a) * 1.3, z = this.pos.z + Math.cos(a) * 1.3; if (Math.abs(this.P.pos.y - this.pos.y) < 2) this.hitCircle(x, z, r, dmg, knock); yield* this.wait(anim === 'kick' ? .3 : .2); }
   *ai() {
     const P = this.P, ph = this.hp / this.maxHp;
     if (ph < .5 && !this.p2) {
       this.p2 = true; this.invul = true; _v.copy(this.pos); _v.y += 1.5; G.fx.burst('magic', _v, 20, { color: 0x6a3aff, s: 2 }); this.pos.x = this.cx; this.pos.z = this.cz; this.body.play('cast', 1.4); G.audio.sfx('roar'); _v.set(this.pos.x, this.pos.y + 3.4, this.pos.z); G.fx.text(_v, 'ТЁМНЫЙ ХАМАМ!', 'alert'); yield* this.wait(1.2);
-      for (let i = 0; i < 3; i++) { G.run(this.shockwave(this.pos.x, this.pos.z, 32, 2.3, 14)); G.cam.shake(.6); this.body.play('slam', .5); yield* this.wait(1.05); }
+      for (let i = 0; i < 3; i++) { G.run(this.shockwave(this.pos.x, this.pos.z, 32, 2.3, 12)); G.cam.shake(.6); this.body.play('slam', .5); yield* this.wait(1.05); }
       this.invul = false; this.summon('slime', 2, 5); yield* this.wait(.6, 6); return;
     }
     const r = Math.random();
     if (r < .38) { // рывок + серия
-      this.body.play('crouch', .45); this.body.flash(.6); yield* this.wait(.45, 10); const a = this.toP(); let t = .42; this.yaw = a; G.audio.sfx('whoosh');
+      this.body.play('crouch', .55); this.body.flash(.6); yield* this.wait(.55, 10); const a = this.toP(); let t = .42; this.yaw = a; G.audio.sfx('whoosh');
       while (t > 0 && this.dist() > 1.7) { t -= G.dt; this.vel.x = Math.sin(a) * 15; this.vel.z = Math.cos(a) * 15; this.speed = 15; if (Math.random() < .6) { _v.copy(this.pos); _v.y += 1.2; G.fx.trail(_v, 0x6a3aff, .8); } yield; }
-      this.speed = 0; yield* this.strike('punchR', 2.1, 12); this.yaw = this.toP(); yield* this.strike('punchL', 2.1, 12); if (this.p2) { this.yaw = this.toP(); yield* this.strike('kick', 2.4, 17, 12); } yield* this.wait(.7, 5);
+      this.speed = 0; yield* this.strike('punchR', 2.1, 10); this.yaw = this.toP(); yield* this.strike('punchL', 2.1, 10); if (this.p2) { this.yaw = this.toP(); yield* this.strike('kick', 2.4, 14, 12); } yield* this.tired(this.p2 ? 1.1 : 1.4);
     } else if (r < .68) { // шаг сквозь тень
       _v.copy(this.pos); _v.y += 1.3; G.fx.burst('smoke', _v, 12, { color: 0x1a1024 }); G.audio.sfx('zap'); const a = P.yaw + PI, w = G.level.world, tx = P.pos.x + Math.sin(a) * 2.4, tz = P.pos.z + Math.cos(a) * 2.4;
       if (!w.inside(tx, P.pos.y + 1, tz) && Math.abs(tx) < 21 && tz > 55.5 && tz < 78) { this.pos.x = tx; this.pos.z = tz; } this.yaw = this.toP(); _v.copy(this.pos); _v.y += 1.3; G.fx.burst('smoke', _v, 12, { color: 0x1a1024 }); this.body.flash(1); this.body.play('crouch', .5);
-      yield* this.wait(.5, 14); yield* this.strike('kick', 2.5, 18, 12); yield* this.wait(.8, 5);
+      yield* this.wait(.62, 14); yield* this.strike('kick', 2.5, 15, 12); yield* this.tired(1.3);
     } else { // веер тёмных котлет
-      yield* this.chase(4, .8, 7); for (let k = 0; k < (this.p2 ? 2 : 1); k++) { this.body.play('throw', .4); yield* this.wait(.2, 12); const a = this.toP(); for (let i = -2; i <= 2; i++) this.shoot({ vx: Math.sin(a + i * .2) * 12, vy: 0, vz: Math.cos(a + i * .2) * 12, y: this.pos.y + 1.5, dmg: 10, kind: 'orb', color: 0x8a4aff, r: .28, life: 3 }); G.audio.sfx('throw'); yield* this.wait(.45, 6); } yield* this.wait(.6, 5);
+      yield* this.chase(4, .8, 7); for (let k = 0; k < (this.p2 ? 2 : 1); k++) { this.body.play('throw', .4); yield* this.wait(.2, 12); const a = this.toP(); for (let i = -2; i <= 2; i++) this.shoot({ vx: Math.sin(a + i * .2) * 12, vy: 0, vz: Math.cos(a + i * .2) * 12, y: this.pos.y + 1.5, dmg: 8, kind: 'orb', color: 0x8a4aff, r: .28, life: 3 }); G.audio.sfx('throw'); yield* this.wait(.45, 6); } yield* this.wait(.6, 5);
     }
     yield* this.chase(4.2, rand(.5, 1.3), 3);
   }
@@ -84,7 +86,7 @@ LEVELS.murino = {
     kiosk(L, -24, 22, PI, 'ШАВЕРМА У АШОТА', 0xd22f2f, 0xffd23a); L.box(0xf2f2ee, 28, 2.2, 32, 14, 4.4, 8, { gloss: 1 }); L.sign('ПРОДУКТЫ 24', 28, 5.2, 27.95, 9, 1.4, PI, { bg: '#0d2a14', fg: '#7dff8a', glow: 2 }); L.box(glowMat(0xfff2d0, 1.2), 28, 1.7, 27.96, 9, 2.2, .06, { solid: false }); L.lamp(28, 2.6, 26.4, 0xbfffd0, 40, 16);
     L.sign('ВКУСНОСТИ', -75.1, 14, -30, 16, 3.4, PI / 2, { bg: 'none', fg: '#ff6fd8', glow: 2.2, stroke: '#30062a' }); L.sign('ЖК «ТУМАННЫЙ»', 79.1, 16, 30, 20, 3.4, -PI / 2, { bg: 'none', fg: '#ffd23a', glow: 2, stroke: '#302000' }); L.sign('МУРИНО — ЭТО\nНЕ ЖМУРИНО!', -30, 12, -77.1, 22, 6, 0, { bg: '#0d1626', fg: '#7fe0ff', glow: 1.6, border: '#7fe0ff' });
     // гаражи
-    const gc = [0x6b6258, 0x4a5a6a, 0x6a4a3a, 0x5a6a4a]; for (let i = 0; i < 15; i++) { garage(L, -28 + i * 4, -48, 0, gc[i % 4]); if (i !== 6 && i !== 7) garage(L, -28 + i * 4, -64.5, 0, gc[(i + 2) % 4]); }
+    const gc = [0x6b6258, 0x4a5a6a, 0x6a4a3a, 0x5a6a4a]; for (let i = 0; i < 15; i++) { if (i) garage(L, -28 + i * 4, -48, 0, gc[i % 4]); if (i !== 6 && i !== 7) garage(L, -28 + i * 4, -64.5, 0, gc[(i + 2) % 4]); }
     L.sign('ГСК «ПАКОСТЬ»', -30, 3.4, -45.15, 6, 1, 0, { bg: '#2a1a1a', fg: '#ffb060' }); fence(L, -30.5, -45.2, -30.5, -67.3, 2, M.ribs('#4a4a4a')); fence(L, 30.5, -45.2, 30.5, -67.3, 2, M.ribs('#4a4a4a')); L.lamp(0, 3, -56.5, 0xffb060, 30, 16, { flicker: 1 });
     // остановка
     L.box(C(0x7fa6c8, .1, .5, { transparent: true, opacity: .4 }), 42, 1.4, 25.2, 5, 2.4, .08); L.box(M.metalDark(), 42, 2.7, 24, 5.4, .1, 2.6, { solid: false }); for (const s of [-1, 1]) L.cyl(M.metalDark(), 42 + s * 2.5, 1.35, 22.9, .06, 2.7, { seg: 6, solid: true }); bench(L, 42, 24.4, PI); L.sign('ОСТ. «КУРЬЕРСКАЯ»', 42, 3.1, 22.7, 4.4, .6, PI, { bg: '#10203a', fg: '#fff', glow: 1 }); L.lamp(42, 2.4, 24, 0xd8e6ff, 26, 12);
@@ -109,7 +111,7 @@ LEVELS.murino = {
     const ashot = { n: 'Ашот', e: '🌯' }; g.spawn(new NPC(-26.6, 0, 19.6, { name: 'Ашот', yaw: PI, mark: '?', r: 2.2, look: { face: faceTex({ mood: 'happy', skin: '#c89070', stache: '#2a1a10' }), top: 0xf2f2f2, sleeve: 'short', pants: 0x2a2a2a, hairStyle: 'cap', capColor: 0xf2f2f2, fat: 1.3, skin: 0xc89070 }, label: 'Купить', *talk() { yield* lines([[ashot, 'Шаверма, брат! С мясом! Каким — не спрашивай.']]); yield* G.ui.shop('ШАВЕРМА У АШОТА', GOODS, 'Вкусности и цепи'); } }));
     const cour = { n: 'Курьер', e: '🛵' }; const cn = g.spawn(new NPC(40.5, 0, 21.6, { name: 'Курьер', yaw: PI, mark: inv.has('pass') ? null : '!', look: { face: faceTex({ mood: 'tired' }), top: 0xffd400, sleeve: 'long', pants: 0x222222, hairStyle: 'cap', capColor: 0xffd400, pack: 0xffd400 }, *talk(n) {
       if (inv.has('pass') || f('m_lift')) return yield* lines([[cour, 'Квартира 3 999 999… Мне всего-то на девять тысяч этажей выше. Спасибо, брат.']]);
-      if (inv.has('parcel')) { yield* lines([[cour, 'Посылка! Целая! Ну, почти. Держи пропуск — мне он уже не поможет, а тебе в самый раз.'], [cour, 'И осторожнее в «пезде»: ливт там… с характером.']]); inv.take('parcel'); inv.add('pass'); n.setMark(null); G.save.money += 30; G.ui.toast('+30 ₽ чаевые', 'hint'); g.checkpoint('start', true); setGoal(); return; }
+      if (inv.has('parcel')) { yield* lines([[cour, 'Посылка! Целая! Ну, почти. Держи пропуск — мне он уже не поможет, а тебе в самый раз.'], [cour, 'И осторожнее в «пезде»: ливт там… с характером.']]); inv.take('parcel'); inv.add('pass'); n.setMark(null); g.pay(30); G.ui.toast('+30 ₽ чаевые', 'hint'); g.checkpoint('start', true); setGoal(); return; }
       yield* lines(f('m_cour') ? [[cour, 'Гаражи — за площадкой, на юге. ГСК «Пакость». Название, говорят, не случайное.']] : [[cour, 'Третий год ищу квартиру 4 000 000 в П-46. Третий год, брат.'], ['ch', 'Мне бы пропуск в «пезд».'], [cour, 'Дам. Но у меня пакости посылку утащили — в гаражи, в ГСК. Принеси, и пропуск твой.']]); g.setFlag('m_cour'); setGoal();
     } }));
     const mash = { n: 'Машинист', e: '🚂' }; g.spawn(new NPC(66.5, .9, -24, { name: 'Машинист', yaw: -PI / 2, mark: f('m_boss') ? '!' : null, look: { face: faceTex({ mood: 'smile', stache: '#555' }), top: 0x20305a, sleeve: 'long', pants: 0x20305a, hairStyle: 'cap', capColor: 0x20305a }, label: 'Сесть на «поез»', *talk() {
@@ -131,7 +133,7 @@ LEVELS.murino = {
     // --- предметы, враги ---
     if (!inv.has('parcel') && !inv.has('pass') && !f('m_lift')) g.spawn(new Crate(1.5, .05, -56.6, { s: 1, item: 'parcel', fid: 'mur.parcelc', ifid: 'mur.parcel', yaw: .2 }));
     crates(L, [[-27, -56], [-22, -57.5], [20, -56], [26, -57], [-50, -30], [-52, 28], [50, -50], [30, 44], [-44, 44], [8, 56, .1], [-5.5, 62.5, .1]], Crate);
-    g.cash(20, -28, 2.9, -48, 'mur.g1'); g.cash(20, 4, 2.9, -48, 'mur.g2'); g.cash(20, 16, 2.9, -64.5, 'mur.g3'); g.item('hp', -16, 2.95, -64.5, 'mur.hp1'); g.item('plums', 24, 2.95, -48, 'mur.pl'); g.item('shava', -6, 1.9, -6, 'mur.sh'); g.item('hp', 38, RY + .4, 78, 'mur.hp2'); g.cash(20, -36, RY + .5, 60, 'mur.r1');
+    g.cash(20, -24, 2.9, -48, 'mur.g1'); g.cash(20, 4, 2.9, -48, 'mur.g2'); g.cash(20, 16, 2.9, -64.5, 'mur.g3'); g.item('hp', -16, 2.95, -64.5, 'mur.hp1'); g.item('plums', 24, 2.95, -48, 'mur.pl'); g.item('shava', -6, 1.9, -6, 'mur.sh'); g.item('hp', 38, RY + .4, 78, 'mur.hp2'); g.cash(20, -36, RY + .5, 60, 'mur.r1');
     const E = (k, x, z, y = 0) => g.spawn(new Enemy(k, x, y, z));
     if (!f('m_boss')) { E('slime', -8, -56); E('slime', 6, -57); E('slime', -3, -55.5); E('slime', 12, -56.5); E('slime', -16, -57); E('wisp', -4, 6); E('wisp', 8, -2); E('wisp', -30, -12); E('gop', 44, -30); E('gop', 47, -33); E('courier', 34, 40); E('courier', -48, -46); E('wisp', 50, 20); }
     else { E('wisp', -4, 6); E('slime', 6, -57); E('slime', -8, -56); }
@@ -141,9 +143,9 @@ LEVELS.murino = {
       L.trigger(0, 70, 0, () => g.script(function* () {
         G.audio.music('boss'); G.cam.shot(3.5, RY + 1.6, 67.5, 0, RY + 2, 62, false, 2.4); yield* wait(1);
         yield* lines([['ch', 'Друн? Ты как сюда раньше меня?.. И чё ты в чёрном?'], ['dark', 'Друн внизу. Шаверму жрёт. А Ч — тут. И Ч никуда не поедет.'], ['dark', 'Кнопки от ливта Ч раскидал: Молочное, Мытищи, Банька. Фог сказал — никто не уедет на первый этаж.'], ['ch', 'Что за бизнес… Ты же не Друн. Ты — ТЁМНЫЙ ДРУН!']]);
-        boss.body.set(null); boss.body.play('cast', 1); G.audio.sfx('roar'); G.cam.shake(.7); G.ui.bigTitle('ТЁМНЫЙ ДРУН', 'БОСС', 2400); yield* wait(1.2); boss.start(); g.goal('Победи Тёмного Друна. Кольца «тёмного хамама» перепрыгивай!');
+        boss.body.set(null); boss.body.play('cast', 1); G.audio.sfx('roar'); G.cam.shake(.7); G.ui.bigTitle('ТЁМНЫЙ ДРУН', 'БОСС', 2400); yield* wait(1.2); boss.start(); g.goal('Победи Тёмного Друна. Уворачивайся от серии — после неё он открывается!');
       }, 'cut'), { box: [20, 2.5], y0: RY - 1, y1: RY + 6 });
-      boss.fade = true; boss.onDefeat = () => { g.setFlag('m_boss'); inv.add('kicks'); G.save.money += 80; G.audio.music('murino'); G.audio.sfx('win'); g.checkpoint('roof', true); g.write(); setGoal(); g.script(function* () { yield* lines([['dark', 'Плаки-плаки… Фог всё равно придёт…'], ['phone', '*бзззз* Друн: «Ч! Туман с рельсов ушёл, поез снова ходит! И слышь — тот тёмный мои кроссы обронил. Носи, они с двойным прыжком».'], ['ch', 'Три кнопки. Молочное, Мытищи, Банька. Поехали.']]); tip('Кроссы Друна: нажми прыжок ещё раз в воздухе'); }); };
+      boss.fade = true; boss.onDefeat = () => { g.setFlag('m_boss'); inv.add('kicks'); g.pay(80); G.audio.music('murino'); G.audio.sfx('win'); g.checkpoint('roof', true); g.write(); setGoal(); g.script(function* () { yield* lines([['dark', 'Плаки-плаки… Фог всё равно придёт…'], ['phone', '*бзззз* Друн: «Ч! Туман с рельсов ушёл, поез снова ходит! И слышь — тот тёмный мои кроссы обронил. Носи, они с двойным прыжком».'], ['ch', 'Три кнопки. Молочное, Мытищи, Банька. Поехали.']]); tip('Кроссы Друна: нажми прыжок ещё раз в воздухе'); }); };
     }
     L.trigger(-50, 0, 6, () => { if (!f('m_drun')) tip('Жёлтая метка ведёт к цели. Shift — бег', 'Жёлтая метка ведёт к цели. Тяни стик до упора — бег'); });
     L.start = function* (cp) { setGoal(); if (cp === 'station' && quest() === 5) G.ui.toast('Все три кнопки у тебя. Пора в П-46!', 'big'); };

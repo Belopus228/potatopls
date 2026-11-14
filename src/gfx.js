@@ -31,6 +31,17 @@ void main(){
   #include <colorspace_fragment>
 }`;
 
+// яркостный фильтр блума: мягкое «колено», в свечение идёт только превышение над порогом (сцена в HDR, иначе белые стены выжигают кадр)
+const BRIGHT_F = `uniform sampler2D tDiffuse; uniform float luminosityThreshold; varying vec2 vUv;
+void main(){
+  vec3 c=min(texture2D(tDiffuse,vUv).rgb,vec3(16.));
+  float v=max(c.r,max(c.g,c.b)),t=luminosityThreshold,k=.25;
+  float s=clamp(v-t+k,0.,2.*k); s=s*s/(4.*k);
+  c*=max(s,v-t)/max(v,1e-4);
+  float m=max(c.r,max(c.g,c.b)); c*=min(1.,3./max(m,1e-4));
+  gl_FragColor=vec4(c,1.);
+}`;
+
 export class Gfx {
   constructor(canvas) {
     const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !G.mobile, powerPreference: 'high-performance', stencil: false });
@@ -40,7 +51,7 @@ export class Gfx {
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1); this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(0xffffff, 2); this.scene.add(this.sun, this.sun.target);
     this.sunDir = new THREE.Vector3(.4, .8, .3).normalize();
-    this.plamp = new THREE.PointLight(0xffe2b8, 0, 16, 1.5); this.scene.add(this.plamp);
+    this.plamp = new THREE.PointLight(0xffe2b8, 0, 22, 1.5); this.scene.add(this.plamp);
     this.skyU = { uTop: { value: new THREE.Color() }, uHor: { value: new THREE.Color() }, uBot: { value: new THREE.Color() }, uSunDir: { value: this.sunDir }, uSunCol: { value: new THREE.Color() }, uCloudCol: { value: new THREE.Color() }, uCloud: { value: 0 }, uStars: { value: 0 }, uTime: { value: 0 }, uSunSize: { value: 300 } };
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(500, 24, 16), new THREE.ShaderMaterial({ uniforms: this.skyU, vertexShader: SKY_V, fragmentShader: SKY_F, side: THREE.BackSide, depthWrite: false, fog: false }));
     this.sky.frustumCulled = false; this.sky.renderOrder = -1000; this.scene.add(this.sky);
@@ -61,10 +72,10 @@ export class Gfx {
     if (Q.bloom) {
       const sz = r.getDrawingBufferSize(new THREE.Vector2()), rt = new THREE.WebGLRenderTarget(sz.x || 2, sz.y || 2, { type: THREE.HalfFloatType, samples: G.mobile ? 0 : (Q.msaa || 0) });
       const c = this.composer = new EffectComposer(r, rt); c.addPass(new RenderPass(this.scene, this.camera));
-      this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .5, .6, .9); c.addPass(this.bloom); c.addPass(new OutputPass());
+      this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .5, .6, .9); this.bloom.materialHighPassFilter.fragmentShader = BRIGHT_F; this.bloom.materialHighPassFilter.needsUpdate = true; c.addPass(this.bloom); c.addPass(new OutputPass());
     }
     this.scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); });
-    if (!init) { this.resize(); if (this.env) this.setEnv(this.env); }
+    if (!init) { this.resize(); if (this.env) { const lamps = this.lamps; this.setEnv(this.env); this.lamps = lamps; } }
   }
   resize() {
     const w = innerWidth, h = innerHeight, pr = Math.min(devicePixelRatio || 1, this.Q.dpr) * this.scale;
@@ -83,8 +94,8 @@ export class Gfx {
     this.sun.color.set(e.sunCol ?? 0xffffff); this.sun.intensity = e.sunInt ?? 0; this.sun.castShadow = Q.shadow > 0 && !e.noShadow && (e.sunInt ?? 0) > 0;
     const sc = this.sun.shadow.camera, S = e.shadowSize || 36; sc.left = -S; sc.right = S; sc.top = S; sc.bottom = -S; sc.near = 1; sc.far = 260; sc.updateProjectionMatrix();
     this.renderer.toneMappingExposure = e.exposure ?? 1;
-    if (this.bloom) { const b = e.bloom || [.35, .5, .92]; this.bloom.strength = b[0]; this.bloom.radius = b[1]; this.bloom.threshold = b[2]; }
-    this.plamp.intensity = e.lamp || 0; this.plamp.color.set(e.lampCol ?? 0xffe2b8);
+    if (this.bloom) { const b = e.bloom || [.3, .5, 1.1]; this.bloom.strength = b[0]; this.bloom.radius = b[1]; this.bloom.threshold = b[2]; }
+    this.plamp.intensity = (e.lamp || 0) * 1.7; this.plamp.color.set(e.lampCol ?? 0xffe2b8);
     if (this.envRT) this.envRT.dispose();
     const cl = u.uCloud.value, st = u.uStars.value; u.uCloud.value = 0; u.uStars.value = 0;
     this.envRT = this.pmrem.fromScene(this.envScene, 0, 1, 1200); u.uCloud.value = cl; u.uStars.value = st;
@@ -111,7 +122,7 @@ export class Gfx {
     const c = this.camera, f = this.focus, d = this.sunDir;
     this.sky.position.copy(c.position); this.skyU.uTime.value = G.time; this.uTime.value = G.time;
     this.sun.position.set(f.x + d.x * 110, f.y + d.y * 110, f.z + d.z * 110); this.sun.target.position.copy(f);
-    this.plamp.position.set(f.x, f.y + 2.4, f.z); this.updateLamps(dt);
+    this.plamp.position.set(f.x, f.y + 3.5, f.z); this.updateLamps(dt);
     if (this.composer) this.composer.render(dt); else this.renderer.render(this.scene, c);
     // динамическое разрешение
     this.acc += dt; this.frames++;

@@ -7,9 +7,9 @@ import { M } from './tex.js';
 
 const _v = new THREE.Vector3();
 export class Boss extends Actor {
-  // o: name, hp, r, h, body, mass, aimY, solidR, goo, fly
+  // o: name, hp, r, h, body, mass, aimY, solidR, goo, fly, guard (множитель урона, пока босс не «открылся»)
   constructor(x, y, z, o) {
-    super(x, y, z); Object.assign(this, { team: 'enemy', boss: true, stunnable: false, vul: 1, speed: 0, active: false, blocked: false, t: 0 }, o); this.maxHp = this.hp; this.root = this.body.root; this.c = { mass: o.mass || 6, fly: o.fly, armor: 1 };
+    super(x, y, z); Object.assign(this, { team: 'enemy', boss: true, stunnable: false, vul: 1, guard: .45, speed: 0, active: false, blocked: false, t: 0, gN: 0 }, o); this.maxHp = this.hp; this.root = this.body.root; this.c = { mass: o.mass || 6, fly: o.fly, armor: 1 };
     this.aimY = o.aimY ?? this.h * .5; this.solidR = o.solidR ?? this.r * .8; this.brain = null; this.sync();
   }
   start() { if (this.active) return; this.active = true; this.brain = this.ai(); G.ui.bossBar(this, this.name); }
@@ -44,9 +44,10 @@ export class Boss extends Actor {
     this.sync(); this.body.update(dt, Math.hypot(v.x, v.z), this.onGround || this.fly ? 0 : 1);
   }
   hurt(dmg, from, knock = 0, kind) {
-    if (this.dead || this.invul || !this.active) return false; dmg = Math.max(1, Math.round(dmg * this.vul)); this.hp -= dmg; this.body.flash(kind === 'spray' ? .3 : .8); const p = this.pos;
+    if (this.dead || this.invul || !this.active) return false; const open = this.vul > 1; dmg = Math.max(1, Math.round(dmg * (open ? this.vul : this.guard))); this.hp -= dmg;
+    if (!open && kind === 'melee' && this.guard < 1 && ++this.gN === 7) G.ui.toast('🛡️ Удары вязнут. Лови момент, когда босс откроется, — тогда бей в полную силу!', 'hint'); this.body.flash(kind === 'spray' ? .3 : .8); const p = this.pos;
     if (kind !== 'spray' || Math.random() < .3) { _v.set(p.x + rand(-.5, .5) * this.r, p.y + this.aimY, p.z + rand(-.5, .5) * this.r); G.fx.burst(this.goo ? 'goo' : 'hit', _v, 6, { color: this.goo }); }
-    _v.set(p.x, p.y + this.h + .4, p.z); if (kind === 'spray') { this.dotAcc = (this.dotAcc || 0) + dmg; if ((this.dotN = (this.dotN || 0) + 1) % 4 === 0) { G.fx.text(_v, String(this.dotAcc), 'dot'); this.dotAcc = 0; } } else G.fx.text(_v, String(dmg), this.vul > 1 ? 'dmg alert' : 'dmg');
+    _v.set(p.x, p.y + this.h + .4, p.z); if (kind === 'spray') { this.dotAcc = (this.dotAcc || 0) + dmg; if ((this.dotN = (this.dotN || 0) + 1) % 4 === 0) { G.fx.text(_v, String(this.dotAcc), 'dot'); this.dotAcc = 0; } } else G.fx.text(_v, String(dmg), open ? 'dmg alert' : this.guard < 1 ? 'dmg weak' : 'dmg');
     if (this.onHurt) this.onHurt(dmg, kind); if (this.hp <= 0) this.die(); return true;
   }
   die() { if (this.dead) return; this.dead = true; this.hp = 0; this.t = 0; this.speed = 0; this.body.set('dead'); G.hitstop = .3; G.cam.shake(1.2); G.audio.sfx('boom'); G.audio.sfx('roar'); _v.set(this.pos.x, this.pos.y + this.aimY, this.pos.z); G.fx.burst(this.goo ? 'goo' : 'smoke', _v, 30, { color: this.goo, s: 2 }); G.fx.ring(this.pos, 1, 12, .8, 0xffffff); for (const e of G.ents) if (e.team === 'enemy' && !e.boss && !e.dead && e.die) e.die(); G.game.onKill(this); G.audio.music(null); }
@@ -55,7 +56,7 @@ export class Boss extends Actor {
 // ---------- ТАРАКАНИЙ ЦАРЬ (общага) ----------
 export class RoachKing extends Boss {
   constructor(x, y, z) {
-    const body = new Spider({ size: 1.45, roach: true, legs: 6, color: 0x4a220e, color2: 0x8a4a1e }); super(x, y, z, { name: 'ТАРАКАНИЙ ЦАРЬ', hp: 330, r: 1.5, h: 1.7, body, goo: 0xb9c94a, bug: true, mass: 8 });
+    const body = new Spider({ size: 1.45, roach: true, legs: 6, color: 0x4a220e, color2: 0x8a4a1e }); super(x, y, z, { name: 'ТАРАКАНИЙ ЦАРЬ', hp: 600, r: 1.5, h: 1.7, body, goo: 0xb9c94a, bug: true, mass: 8, guard: .4 });
     const crown = new THREE.Group(), gm = M.gold(); const ring = new THREE.Mesh(new THREE.CylinderGeometry(.34, .3, .2, 8, 1, true), gm); crown.add(ring); for (let i = 0; i < 5; i++) { const s = new THREE.Mesh(new THREE.ConeGeometry(.08, .28, 4), gm); const a = i / 5 * TAU; s.position.set(Math.sin(a) * .31, .22, Math.cos(a) * .31); crown.add(s); } crown.position.set(0, .52, .45); crown.traverse(o => o.castShadow = true); body.b.body.add(crown); this.n = 0; this.waves = 0;
   }
   *ai() {

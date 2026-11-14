@@ -18,7 +18,7 @@ const GOODS = [{ id: 'milk', price: 30 }, { id: 'bread', price: 8 }, { id: 'kvas
 
 // ---------- ПАУЧЬЯ МАТКА ----------
 class SpiderQueen extends Boss {
-  constructor(x, y, z) { super(x, y, z, { name: 'ПАУЧЬЯ МАТКА', hp: 640, r: 2.5, h: 3, mass: 14, solidR: 1.9, aimY: 1.8, goo: 0x9ed63a, bug: true, body: new Spider({ size: 2.3, color: 0x1e1512, color2: 0x7a2a2a }) }); this.waves = 0; }
+  constructor(x, y, z) { super(x, y, z, { name: 'ПАУЧЬЯ МАТКА', hp: 800, r: 2.5, h: 3, mass: 14, solidR: 1.9, aimY: 1.8, goo: 0x9ed63a, bug: true, body: new Spider({ size: 2.3, color: 0x1e1512, color2: 0x7a2a2a }) }); this.waves = 0; }
   *ai() {
     const P = this.P, ph = this.hp / this.maxHp, fast = ph < .4;
     if ((ph < .7 && this.waves < 1) || (ph < .4 && this.waves < 2)) { this.waves++; this.body.play('cast', 1.2); G.audio.sfx('screech'); _v.set(this.pos.x, this.pos.y + 5, this.pos.z); G.fx.text(_v, 'ДЕТИ МОИ!', 'alert'); yield* this.wait(1); this.summon('spiderling', 3 + this.waves, 5); yield* this.wait(.5); }
@@ -91,13 +91,14 @@ LEVELS.milk = {
     const lampG = glowMat(0xff3030, 2.5), lamp = L.mesh(GEO.sph(), f('k_power') ? glowMat(0x4dff6a, 2.5) : lampG, -36, TY + 3.7, -54, { s: .3 });
     L.box(glowMat(0xffd21f, 2), -41.2, TY + .3, -49, 1.6, .3, .3, { solid: false }); L.box(M.metalDark(), -30.8, TY + .3, -43, 1.6, .3, .3, { solid: false }); L.sign('ВХОД', -42.2, TY + 1, -49, 1.3, .45, PI / 2, { bg: '#111', fg: '#ffd21f', dbl: 1 }); L.sign('ЛИНИЯ', -29.8, TY + 1, -43, 1.5, .45, PI / 2, { bg: '#111', fg: '#ffd21f', dbl: 1 });
     const wp = new WirePuzzle(L, -40, -50, TY + .13, 2, ['ILLI', 'LITL', 'ILLI', 'LTLI'], { solved: !!f('k_power'), sol: [[1, 2, 0, 0], [0, 0, 0, 0], [0, 0, 2, 0], [0, 0, 0, 1]], can: () => f('k_fuse'), onSolve: () => { g.setFlag('k_power'); lamp.material = glowMat(0x4dff6a, 2.5); G.audio.sfx('power'); G.cam.shake(.4); G.ui.toast('⚡ Ток пошёл! Трамвайная линия запитана', 'big'); g.checkpoint('tp', true); g.write(); setGoal(); } });
+    L.wp = wp;
     L.interact(-36, TY + 1.2, -53.2, 2.4, 'Вставить предохранитель', () => { if (!inv.has('fuse')) { G.audio.sfx('deny'); return G.ui.toast('Нужен предохранитель. Спроси у Деда в селе.', 'hint'); } inv.take('fuse'); g.setFlag('k_fuse'); G.audio.sfx('lever'); G.ui.toast('🔌 Предохранитель на месте. Теперь поверни плитки так, чтобы ток дошёл от «ВХОД» до «ЛИНИЯ»', 'big'); setGoal(); }, { cond: () => !f('k_fuse') && !f('k_power') });
     // гнездо
     for (let i = 0; i < 7; i++) { const a = i / 7 * TAU + .3, x = 40 + Math.sin(a) * 13, z = 80 + Math.cos(a) * 13; tree(L, x, z, 1 + r() * .4, 'bare'); if (i % 2) web(L, 40 + Math.sin(a + .4) * 12.5, hf(x, z) + 3, 80 + Math.cos(a + .4) * 12.5, 5, a + .4 + PI / 2); }
     for (let i = 0; i < 9; i++) { const x = 34 + r() * 12, z = 75 + r() * 11; L.sph(C(0xe8e4d8, .6), x, hf(x, z) + .35, z, 1, { s: [.4, .55, .4] }); } for (const [x, z] of [[36, 88], [45, 76], [33, 79]]) L.sph(C(0xdad6c8, .8), x, hf(x, z) + 1.1, z, 1, { s: [.7, 1.5, .7] });
     L.sign('ГНЕЗДО\nНЕ ХОДИ', 40, hf(40, 64) + 1.5, 64, 2, 1, PI, { bg: '#5a3a22', fg: '#ffe9a8', dbl: 1 }); L.cyl(M.planksDark(), 40, hf(40, 64) + .6, 64, .07, 1.4, { seg: 5, solid: true });
     // пляж
-    L.box(M.planks(), 87, .2, -24, 26, .3, 3.2); for (let i = 0; i < 6; i++) for (const s of [-1, 1]) L.cyl(M.planksDark(), 76 + i * 4.6, -1.2, -24 + s * 1.5, .14, 3.4, { seg: 6 });
+    L.box(M.planks(), 87, .2, -24, 26, .3, 3.2); L.ramp(M.planks(), 71.5, -24, 3.2, 5.2, hf(68.9, -24) - .25, .35, { rot: PI / 2 }); for (let i = 0; i < 6; i++) for (const s of [-1, 1]) L.cyl(M.planksDark(), 76 + i * 4.6, -1.2, -24 + s * 1.5, .14, 3.4, { seg: 6 });
     for (const [x, z, c] of [[66, -8, 0xd22f2f], [68, 6, 0x2a6ad0], [66, 18, 0xffc530], [70, -40, 0x2a8a4a], [67, 44, 0xff7ab0]]) { const y = hf(x, z); L.cyl(M.white(), x, y + 1.2, z, .05, 2.4, { seg: 5, solid: true }); L.cone(c, x, y + 2.5, z, 1.7, .7, { seg: 10, gloss: 1 }); L.box(M.planksLight(), x + 1.6, y + .3, z, .8, .12, 2, { rot: .2 }); }
     L.sign('ПЛЯЖ', 60, hf(60, 4) + 3.2, 4, 5, 1.2, -PI / 2, { bg: '#134a8a', fg: '#ffe9a8', dbl: 1 }); for (const s of [-1, 1]) L.cyl(M.planksLight(), 60, hf(60, 4) + 1.6, 4 + s * 2.4, .1, 3.2, { seg: 6, solid: true });
     // --- Паучья яма (отдельная арена) ---
@@ -157,7 +158,7 @@ LEVELS.milk = {
     let boss = null;
     if (!f('k_boss')) {
       boss = g.spawn(new SpiderQueen(PX, 0, PZ - 8)); boss.yaw = 0; boss.sync(); boss.fade = true;
-      boss.onDefeat = () => { g.setFlag('k_boss'); inv.add('btn1'); G.save.money += 100; G.audio.music('village'); G.audio.sfx('win'); g.checkpoint('pit', true); g.write(); setGoal(); g.script(function* () { yield* lines([['ch', 'Кнопка «М»! Липкая… Одна есть. Вылезаю отсюда по паутине.']]); }); };
+      boss.onDefeat = () => { g.setFlag('k_boss'); inv.add('btn1'); g.pay(100); G.audio.music('village'); G.audio.sfx('win'); g.checkpoint('pit', true); g.write(); setGoal(); g.script(function* () { yield* lines([['ch', 'Кнопка «М»! Липкая… Одна есть. Вылезаю отсюда по паутине.']]); }); };
     }
     L.interact(PX, 1.2, PZ + 24.6, 3, 'Вылезти по паутине', () => g.script(function* () { yield* G.ui.fadeTo(1, .4); G.player.place(-66, TY + .4, 23.5, 0); G.cam.snap(); kn.root.visible = true; g.checkpoint('out', true); yield* wait(.4); yield* G.ui.fadeTo(0, .4); }), { cond: () => f('k_boss') }); web(L, PX, 5, PZ + 25, 9, PI);
     if (f('k_ride')) { tram.visible = false; tcol.off = true; }

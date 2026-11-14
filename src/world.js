@@ -2,7 +2,7 @@
 import { clamp } from './g.js';
 
 export class World {
-  constructor() { this.solids = []; this.grid = new Map(); this.cs = 6; this.hf = null; this.qid = 0; this.out = []; this.killY = -25; this.dyn = []; this.gs = null; }
+  constructor() { this.solids = []; this.grid = new Map(); this.cs = 6; this.hf = null; this.qid = 0; this.out = []; this.killY = -25; this.dyn = []; this.gs = null; this.base = 0; }
   _ins(s) {
     const c = Math.abs(s.c), n = Math.abs(s.s), ex = c * s.hx + n * s.hz, ez = n * s.hx + c * s.hz, cs = this.cs;
     for (let ix = Math.floor((s.x - ex) / cs); ix <= Math.floor((s.x + ex) / cs); ix++) for (let iz = Math.floor((s.z - ez) / cs); iz <= Math.floor((s.z + ez) / cs); iz++) {
@@ -27,7 +27,7 @@ export class World {
     return out;
   }
   top(s, lz) { return s.t === 1 ? s.ya + (s.yb - s.ya) * clamp((lz + s.hz) / (2 * s.hz), 0, 1) : s.y1; }
-  height(x, z) { return this.hf ? this.hf(x, z) : 0; }
+  height(x, z) { return this.hf ? this.hf(x, z) : this.base; }   // base: уровень «земли» без рельефа (в зданиях с подвалом опускаем)
   // высота опоры под точкой (с учётом шага)
   ground(x, z, fy, step = .45) {
     let g = this.height(x, z); const a = this.query(x - .3, z - .3, x + .3, z + .3); this.gs = null;
@@ -89,7 +89,7 @@ export class World {
       if (ok && t0 < best) best = t0;
     }
     if (this.hf) for (let k = 1; k <= 6; k++) { const t = best * k / 6; if (oy + dy * t < this.hf(ox + dx * t, oz + dz * t) + .15) { best = Math.min(best, best * (k - 1) / 6 + .05); break; } }
-    else if (dy < 0) { const t = (oy - .12) / -dy; if (t < best && t > 0) best = t; }
+    else if (dy < 0) { const t = (oy - this.base - .12) / -dy; if (t < best && t > 0) best = t; }
     return best;
   }
 }

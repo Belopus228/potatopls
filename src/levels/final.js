@@ -48,7 +48,7 @@ class FogPart {
 
 class Fog extends Boss {
   constructor() {
-    super(0, 0, 25, { name: 'ФОГ', hp: 1150, r: .01, h: 12, mass: 99, solidR: 0, fly: true, aimY: 6, body: new FogBody() });
+    super(0, 0, 25, { name: 'ФОГ', hp: 1600, r: .01, h: 12, mass: 99, solidR: 0, fly: true, aimY: 6, body: new FogBody() });
     this.noAim = true; this.invul = true; this.ph = 1; this.n = 0; this.side = 0; this.fogT = .028; this.dn = 0; this.da = 0;
     this.hands = [new FogPart(this, 2.2, 1.7, 1.5), new FogPart(this, 2.2, 1.7, 1.5)]; this.face = new FogPart(this, 4.2, 7, 3.7);
   }

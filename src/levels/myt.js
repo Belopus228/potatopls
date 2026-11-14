@@ -13,13 +13,13 @@ import { FACE } from '../faces.js';
 import { lines, tip } from '../script.js';
 
 const _v = new THREE.Vector3(), AZ = 46;
-const CLEAN = { top: 0x2a8ae8, hor: 0xd8f2ff, bot: 0x9fc0d0, sun: [.35, .8, -.4], sunCol: 0xffffff, sunInt: 3.2, hemiSky: 0xd0ecff, hemiGnd: 0x9ab0b8, hemiInt: .95, fog: [0xd8f2ff, 60, 300], clouds: .35, exposure: 1.02, bloom: [.35, .55, .95], envInt: 1, shadowSize: 44 };
+const CLEAN = { day: 1, top: 0x2a8ae8, hor: 0xd8f2ff, bot: 0x9fc0d0, sun: [.35, .8, -.4], sunCol: 0xffffff, sunInt: 2.4, hemiSky: 0xd0ecff, hemiGnd: 0x9ab0b8, hemiInt: .4, fog: [0xd8f2ff, 60, 300], clouds: .35, exposure: 1, bloom: [.25, .5, 1.3], envInt: .4, shadowSize: 44 };
 const GOODS = [{ id: 'bread', price: 8 }, { id: 'banana', price: 12 }, { id: 'shava', price: 45 }, { id: 'kvas', price: 60 }, { id: 'hp', price: 90, max: 6 }, { id: 'chain', price: 160, max: 3 }];
 const MOI = { n: 'МОЙДОДЫР', e: '🚰', c: '#8fe3ff', p: .5 };
 
 // ---------- МОЙДОДЫР ----------
 class Moidodyr extends Boss {
-  constructor(x, y, z) { super(x, y, z, { name: 'МОЙДОДЫР', hp: 780, r: 1.5, h: 4.4, mass: 12, solidR: 1.25, aimY: 2.5, goo: 0xa8dcff, body: makeHuman({ body: 'moidodyr', scale: 2.3 }) }); this.hot = false; this.n = 0; }
+  constructor(x, y, z) { super(x, y, z, { name: 'МОЙДОДЫР', hp: 980, r: 1.5, h: 4.4, mass: 12, solidR: 1.25, aimY: 2.5, goo: 0xa8dcff, body: makeHuman({ body: 'moidodyr', scale: 2.3 }) }); this.hot = false; this.n = 0; }
   shout(t, cls = 'alert') { _v.set(this.pos.x, this.pos.y + 5.6, this.pos.z); G.fx.text(_v, t, cls); }
   // куски мыла по дуге: попадание — скользко
   *volley(n) {
@@ -107,6 +107,7 @@ LEVELS.myt = {
       inv.add('soap'); an.setMark(null); g.checkpoint('plaza', true); g.write(); setGoal();
     }
     const sp = new SlidePuzzle(L, -37, 1, .08, 2, ['.oB...', '...B..', '.#..B.', '...#.o', '.....o'], { solved: !!f('y_wash'), onSolve: () => { g.setFlag('y_wash'); g.script(washed, 'cut'); } });
+    L.sp = sp;
     L.interact(-23.2, 1.1, 1.7, 1.7, 'Вернуть мыло на место', () => sp.reset(), { cond: () => !sp.solved });
     let st = 0; L.onUpdate(dt => { if (!sp.solved) return; st -= dt; if (st <= 0 && G.player.pos.distanceToSquared(_v.set(-30, 0, 6)) < 900) { st = .1; _v.set(-36 + (Math.random() * 6 | 0) * 2, 2.8, 10.7); G.fx.burst('water', _v, 2, { sp: .3 }); } });
     // --- магазин ---
@@ -173,7 +174,7 @@ LEVELS.myt = {
         boss.body.play('cast', 1.2); G.audio.sfx('roar'); G.cam.shake(.8); G.ui.bigTitle('МОЙДОДЫР', 'БОСС', 2400); yield* wait(1.3); boss.start(); g.goal('Победи Мойдодыра. Когда выдохнется — бей!');
         tip('Волны по полу перепрыгивай. Мыло делает пол скользким', 'Волны по полу перепрыгивай. Мыло делает пол скользким');
       }, 'cut'), { box: [21, 3] });
-      boss.onDefeat = () => { g.setFlag('y_boss'); inv.add('btn2'); G.save.money += 100; G.audio.music('clean'); G.audio.sfx('win'); setGate(true); g.checkpoint('gate', true); g.write(); setGoal(); g.script(function* () { yield* lines([[MOI, 'Буль… Ладно. Ты… условно чистый. Забирай кнопку. Она стерильная, не лапай!'], ['ch', 'Кнопка «Ы». Вторая есть. Чистая победа.']]); }); };
+      boss.onDefeat = () => { g.setFlag('y_boss'); inv.add('btn2'); g.pay(100); G.audio.music('clean'); G.audio.sfx('win'); setGate(true); g.checkpoint('gate', true); g.write(); setGoal(); g.script(function* () { yield* lines([[MOI, 'Буль… Ладно. Ты… условно чистый. Забирай кнопку. Она стерильная, не лапай!'], ['ch', 'Кнопка «Ы». Вторая есть. Чистая победа.']]); }); };
     }
     L.start = function* (cp) { setGoal(); if (cp === 'start' && !f('y_talk')) { yield* wait(1.2); tip('Мытищи. Тут слишком чисто… «Мыти» грязнуль не любят', 'Мытищи. Тут слишком чисто… «Мыти» грязнуль не любят'); } };
   },

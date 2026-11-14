@@ -95,7 +95,7 @@ export class Level {
     this.trash.push(mat); const m = this.mesh(GEO.plane(), mat, x, y, z, { ry, rx: o.rx, s: [w, h, 1] }); if (o.rx) m.rotation.order = 'YXZ'; return m;
   }
   glow(x, y, z, size, color, op = .8) { const s = new THREE.Sprite(memo('sp' + color + op, () => new THREE.SpriteMaterial({ map: glowTex(), color, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, fog: true }))); s.position.set(x, y, z); s.scale.setScalar(size); this.group.add(s); return s; }
-  lamp(x, y, z, color = 0xffd9a0, int = 40, dist = 18, o = {}) { const L = { x, y, z, color, int, dist, ...o }; this.lamps.push(L); return L; }
+  lamp(x, y, z, color = 0xffd9a0, int = 40, dist = 18, o = {}) { if (this.def.env && this.def.env.day) int *= .3; const L = { x, y, z, color, int, dist, ...o }; this.lamps.push(L); return L; }
   // ----- геймплей -----
   interact(x, y, z, r, label, use, o = {}) { const it = { pos: new THREE.Vector3(x, y, z), r, label, use, ...o }; this.inter.push(it); return it; }
   trigger(x, z, r, fn, o = {}) { const t = { x, z, r, fn, once: o.once !== false, ...o }; this.trig.push(t); return t; }

@@ -104,7 +104,7 @@ function mosaic(pal = ['#2a7fb8', '#3aa0d0', '#e8f4fa', '#1f5f94', '#7fd0e8', '#
   grain(c, 10, 3);
   return { map: tex(c), normal: normalMap(gray(cv(128), (x, y) => ((x & 7) < 1 || (y & 7) < 1) ? 60 : 220), 1.6) };
 }
-function bigTiles(a = '#f4f8fb', b = '#b8dff0') { const c = cv(128), g = fill(c, b); g.fillStyle = a; for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) g.fillRect(x * 64 + 1.5, y * 64 + 1.5, 61, 61); grain(c, 8, 2); return tex(c); }
+function bigTiles(a = '#e4ecf1', b = '#a9d3e6') { const c = cv(128), g = fill(c, b); g.fillStyle = a; for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) g.fillRect(x * 64 + 1.5, y * 64 + 1.5, 61, 61); grain(c, 8, 2); return tex(c); }
 function wall2(paint = '#4c8a6a', top = '#d8d4c4') {
   const c = cv(64, 256), g = fill(c, top); g.fillStyle = paint; g.fillRect(0, 142, 64, 114); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 140, 64, 3);
   const gr = g.createLinearGradient(0, 200, 0, 256); gr.addColorStop(0, 'rgba(30,24,16,0)'); gr.addColorStop(1, 'rgba(30,24,16,.4)'); g.fillStyle = gr; g.fillRect(0, 200, 64, 56);
@@ -240,7 +240,7 @@ export const M = {
   brick: () => memo('m.brick', () => { const t = brick(); return tile(std({ map: t.map, normalMap: t.normal, roughness: .9 }), 2.4); }),
   mosaic: () => memo('m.mos', () => { const t = mosaic(); return tile(std({ map: t.map, normalMap: t.normal, roughness: .22, envMapIntensity: 1.2 }), 2); }),
   mosaicWarm: () => memo('m.mosw', () => { const t = mosaic(['#c98a4a', '#e2b070', '#f3e2c4', '#a9642e', '#e9c48c'], '#f1e6d4'); return tile(std({ map: t.map, normalMap: t.normal, roughness: .3 }), 2); }),
-  bigTiles: () => memo('m.bt', () => tile(std({ map: bigTiles(), roughness: .18, envMapIntensity: 1.3 }), 4)),
+  bigTiles: () => memo('m.bt', () => tile(std({ map: bigTiles(), roughness: .2, envMapIntensity: 1.1 }), 4)),
   wall2: (paint = '#4c8a6a') => memo('m.w2' + paint, () => tile(std({ map: wall2(paint), roughness: .7 }), [1.2, 3.6])),
   lino: () => memo('m.lino', () => tile(std({ map: lino(), roughness: .55 }), 2)),
   ribs: (c = '#6b6258') => memo('m.ribs' + c, () => tile(std({ map: ribs(c), roughness: .5, metalness: .5 }), 2)),

@@ -21,12 +21,14 @@ export class Game {
   flag(k) { return G.save.flags[k]; }
   setFlag(k, v = 1) { G.save.flags[k] = v; }
   // ---------- запуск ----------
-  toMenu() { if (G.level && !this.menuLevel) this.write(); this.menuLevel = true; G.save = this.defaults(); G.run(this.load('menu', 'start', true), true); }
-  newGame() { ls.del(SAVE); this.menuLevel = false; G.save = this.defaults(); G.player.hp = 100; G.player.rage = 0; G.run(this.load('dorm', 'start'), true); }
-  continue() { this.menuLevel = false; G.save = { ...this.defaults(), ...(ls.get(SAVE) || {}) }; G.player.hp = G.save.hp > 0 ? G.save.hp : 100; G.player.rage = G.save.rage || 0; G.run(this.load(G.save.level, G.save.cp), true); }
-  startChapter(id, cp = 'start') { this.menuLevel = false; const k = LEVELS[id].kit || {}, S = G.save = this.defaults(); Object.assign(S.gear, k.gear); Object.assign(S.inv, k.inv); Object.assign(S.flags, k.flags); S.money = k.money || 0; G.player.hp = 100 + 20 * (S.gear.hp || 0); G.player.rage = 0; G.run(this.load(id, cp), true); }
-  travel(id, cp = 'start') { if (this.loading) return; G.run(this.load(id, cp), true); }
-  respawn() { const p = G.player; p.hp = p.maxHp; G.run(this.load(G.save.level, G.save.cp), true); }
+  // запуск загрузки: режим меняем сразу — на паузе корутины не крутятся, и загрузка иначе не начнётся
+  go(id, cp, menu) { if (this.loading) return; G.mode = 'cut'; G.run(this.load(id, cp, menu), true); }
+  toMenu() { if (G.level && !this.menuLevel) this.write(); this.menuLevel = true; G.save = this.defaults(); this.go('menu', 'start', true); }
+  newGame() { ls.del(SAVE); this.menuLevel = false; G.save = this.defaults(); G.player.hp = 100; G.player.rage = 0; this.go('dorm', 'start'); }
+  continue() { this.menuLevel = false; G.save = { ...this.defaults(), ...(ls.get(SAVE) || {}) }; G.player.hp = G.save.hp > 0 ? G.save.hp : 100; G.player.rage = G.save.rage || 0; this.go(LEVELS[G.save.level] ? G.save.level : 'dorm', G.save.cp); }
+  startChapter(id, cp = 'start') { this.menuLevel = false; const k = LEVELS[id].kit || {}, S = G.save = this.defaults(); Object.assign(S.gear, k.gear); Object.assign(S.inv, k.inv); Object.assign(S.flags, k.flags); S.money = k.money || 0; G.player.hp = 100 + 20 * (S.gear.hp || 0); G.player.rage = 0; this.go(id, cp); }
+  travel(id, cp = 'start') { this.go(id, cp); }
+  respawn() { const p = G.player; p.hp = p.maxHp; this.go(G.save.level, G.save.cp); }
   unload() {
     G.clearCo(); for (const e of G.ents) e.dispose(); G.ents.length = 0; if (G.level) { G.level.dispose(); G.level = null; } G.fx.clear(); G.gfx.lamps = []; this.mark = null; this.inScript = 0; G.ui.endDlg(); G.ui.bossBar(null); G.ui.objective(''); G.cam.free(); G.cam.maxDist = 8; if (G.cam.want > 8) G.cam.want = 5.2; G.hitstop = 0;
   }
@@ -51,6 +53,7 @@ export class Game {
   // постоянный предмет на уровне (не появляется снова после подбора)
   item(id, x, y, z, fid, o = {}) { if (this.flag(fid)) return null; return this.spawn(new Pickup(x, y, z, { item: id, fid, ...o })); }
   cash(v, x, y, z, fid) { if (fid && this.flag(fid)) return null; return this.spawn(new Pickup(x, y, z, { money: v, fid })); }
+  pay(n) { G.save.money += n; G.save.earned = (G.save.earned || 0) + n; }
   onKill(e) { G.save.kills++; const L = G.level; if (L && L.onKill) L.onKill(e); }
   goal(text, x, y, z) { G.ui.objective(text); this.mark = x === undefined ? null : new THREE.Vector3(x, y, z); }
   checkpoint(id, quiet) { const S = G.save; if (S.cp === id) return; S.cp = id; this.write(); if (!quiet) G.ui.toast('💾 Сохранено', 'hint'); }

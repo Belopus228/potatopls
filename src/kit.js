@@ -23,10 +23,10 @@ export function door(L, x, y, z, rot = 0, o = {}) {
   if (o.label !== false) d.it = L.interact(x, y + 1, z, 2.3, o.label || 'Открыть', () => { const msg = o.locked && o.locked(); if (msg) { G.audio.sfx('deny'); if (typeof msg === 'string') G.ui.toast(msg, 'hint'); return; } d.setOpen(true); if (o.onOpen) o.onOpen(d); }, { cond: () => !d.open });
   return d;
 }
-export function ceilLamp(L, x, y, z, color = 0xfff0d0, int = 22, dist = 12, o) { L.box(glowMat(color, 2.4), x, y - .04, z, o && o.rz ? .26 : 1.1, .06, o && o.rz ? 1.1 : .26, { solid: false }); return L.lamp(x, y - .6, z, color, int, dist, o); }
+export function ceilLamp(L, x, y, z, color = 0xfff0d0, int = 22, dist = 12, o) { L.box(glowMat(color, 2.4), x, y - .04, z, o && o.rz ? .26 : 1.1, .06, o && o.rz ? 1.1 : .26, { solid: false }); return L.lamp(x, y - .6, z, color, int * .6, dist, o); }
 export function lampPost(L, x, z, y = 0, color = 0xffc98a, h = 6.2, rot = 0) {
-  L.cyl(M.metalDark(), x, y + h / 2, z, .1, h, { solid: true, seg: 6 }); const [ax, az] = at(x, z, rot, .65, 0); L.box(M.metalDark(), (x + ax) / 2, y + h, (z + az) / 2, 1.4, .09, .09, { rot, solid: false }); L.box(glowMat(color, 3), ax, y + h - .09, az, .5, .09, .24, { rot, solid: false });
-  L.glow(ax, y + h - .2, az, 3.2, color, .45); return L.lamp(ax, y + h - 1, az, color, 70, 24);
+  L.cyl(M.metalDark(), x, y + h / 2, z, .1, h, { solid: true, seg: 6 }); const [ax, az] = at(x, z, rot, .65, 0); L.box(M.metalDark(), (x + ax) / 2, y + h, (z + az) / 2, 1.4, .09, .09, { rot, solid: false }); const day = L.def.env && L.def.env.day; L.box(day ? C(0xf2f2ee, .3) : glowMat(color, 3), ax, y + h - .09, az, .5, .09, .24, { rot, solid: false });
+  if (day) return null; L.glow(ax, y + h - .2, az, 3.2, color, .45); return L.lamp(ax, y + h - 1, az, color, 70, 24);
 }
 export function tree(L, x, z, s = 1, kind = 'oak', y) {
   y = y ?? L.world.height(x, z); const r = L.r;

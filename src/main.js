@@ -34,7 +34,7 @@ try {
   const frame = t => {
     requestAnimationFrame(frame); const dt = Math.min(.05, Math.max(.0005, (t - last) / 1000)); last = t;
     try { step(dt, true); } catch (e) { fail(e); G.input.endFrame(); }
-    if (++n === 3) { boot.style.opacity = 0; setTimeout(() => boot.remove(), 600); }
+    if (++n === 3) { boot.style.opacity = 0; boot.style.pointerEvents = 'none'; setTimeout(() => boot.remove(), 600); }
   };
   // отладка/автотесты: прогнать n кадров симуляции без отрисовки
   window.sim = (n, dt = 1 / 30) => { for (let i = 0; i < n; i++) step(dt, false); return G.mode; };

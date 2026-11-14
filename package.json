@@ -7,7 +7,8 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "dev": "node tools/build.mjs --watch --serve",
-    "serve": "node tools/serve.mjs"
+    "serve": "node tools/serve.mjs",
+    "test": "node tools/test/all.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
