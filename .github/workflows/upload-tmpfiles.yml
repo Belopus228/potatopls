@@ -1,0 +1,52 @@
+# Выкладывает архив с игрой на https://tmpfiles.org/ и печатает ссылку
+# (в заметках запуска и в Summary). Ссылки tmpfiles.org живут 60 минут —
+# чтобы получить свежую, перезапусти задачу (Actions → Re-run jobs).
+name: Архив на tmpfiles.org
+
+on:
+  push:
+    branches: ['arena/c09c2baf-potatopls']
+    paths: ['docs/mellstroynost-3d.zip', '.github/workflows/upload-tmpfiles.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Выложить docs/mellstroynost-3d.zip
+        run: |
+          set -euo pipefail
+          f=docs/mellstroynost-3d.zip
+          ls -l "$f"
+          sum=$(sha256sum "$f" | cut -d' ' -f1)
+          resp=$(curl -fsS --retry 3 --retry-delay 5 -F "file=@$f" https://tmpfiles.org/api/v1/upload)
+          echo "$resp"
+          url=$(printf '%s' "$resp" | python3 -c 'import sys, json; print(json.load(sys.stdin)["data"]["url"])')
+          url=$(printf '%s' "$url" | sed 's#^http://#https://#')
+          # проверка: берём со страницы файла подписанную ссылку на скачивание (она живёт несколько минут),
+          # скачиваем архив обратно и сверяем контрольную сумму
+          check="не удалось проверить скачивание"
+          page=$(curl -sSL -A "Mozilla/5.0" "$url") || true
+          dl=$(printf '%s' "$page" | grep -o 'href="[^"]*/dl/[^"]*"' | head -1 | sed 's/^href="//; s/"$//') || true
+          case "$dl" in /*) dl="https://tmpfiles.org$dl" ;; esac
+          if [ -n "$dl" ]; then
+            code=$(curl -sSL -A "Mozilla/5.0" -o /tmp/back.bin -w '%{http_code} %{content_type} %{size_download}b' "$dl") || true
+            back=$(sha256sum /tmp/back.bin 2>/dev/null | cut -d' ' -f1) || true
+            echo "скачивание: $code, sha256 $back"
+            if [ "$back" = "$sum" ]; then check="файл скачивается, sha256 совпадает"; else check="скачалось не то ($code)"; fi
+          fi
+          echo "::notice title=tmpfiles.org::$url"
+          echo "::notice title=Проверка::$check"
+          {
+            echo "### Архив на tmpfiles.org"
+            echo
+            echo "- ссылка: $url"
+            echo "- проверка: $check"
+            echo
+            echo "Файл хранится на tmpfiles.org 60 минут. Нужна новая ссылка — Re-run jobs."
+          } >> "$GITHUB_STEP_SUMMARY"

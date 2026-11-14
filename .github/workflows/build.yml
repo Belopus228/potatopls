@@ -1,0 +1,173 @@
+# Сборка игры на Godot: проверка сценариями, экспорт под Windows, Linux, Android и браузер,
+# выкладка в GitHub Releases (тег v2-latest обновляется при каждой сборке).
+name: Сборка игры (Godot)
+
+on:
+  push:
+    branches: ['arena/c09c2baf-potatopls', 'main']
+    paths: ['game/**', '.github/workflows/build.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.4.1
+  GODOT_TAG: 4.4.1-stable
+  NAME: Mellstroynost-3D
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Кэш Godot и шаблонов
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-dl
+          key: godot-${{ env.GODOT_TAG }}-v1
+
+      - name: Скачать Godot и шаблоны экспорта
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p ~/godot-dl && cd ~/godot-dl
+          base=https://github.com/godotengine/godot/releases/download/$GODOT_TAG
+          curl -fsSL --retry 3 -O "$base/Godot_v${GODOT_TAG}_linux.x86_64.zip"
+          curl -fsSL --retry 3 -O "$base/Godot_v${GODOT_TAG}_export_templates.tpz"
+          curl -fsSL --retry 3 -O "$base/SHA512-SUMS.txt"
+          sha512sum -c --ignore-missing SHA512-SUMS.txt
+
+      - name: Установить Godot
+        run: |
+          set -euo pipefail
+          mkdir -p ~/godot && unzip -q -o ~/godot-dl/Godot_v${GODOT_TAG}_linux.x86_64.zip -d ~/godot
+          ln -sf ~/godot/Godot_v${GODOT_TAG}_linux.x86_64 ~/godot/godot
+          T=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mkdir -p "$T" && unzip -q -o -j ~/godot-dl/Godot_v${GODOT_TAG}_export_templates.tpz -d "$T"
+          ls "$T" | head -40
+          ~/godot/godot --headless --version
+
+      - name: Импорт ресурсов
+        run: |
+          set -uo pipefail
+          ~/godot/godot --headless --path game --import > import.log 2>&1 || true
+          ~/godot/godot --headless --path game --import > import2.log 2>&1 || true
+          grep -c "SCRIPT ERROR" import2.log || true
+          if grep -q "SCRIPT ERROR" import2.log; then grep -A2 "SCRIPT ERROR" import2.log | head -40; echo "::error title=Скрипты::ошибки разбора GDScript"; exit 1; fi
+
+      - name: Сценарии (тесты)
+        run: |
+          set -uo pipefail
+          tests=$(cat game/tests/ci.txt 2>/dev/null || echo smoke)
+          timeout 900 ~/godot/godot --headless --fixed-fps 60 --path game -- --test=$tests --nosave > test.log 2>&1
+          code=$?
+          grep "^\[T\]" test.log | tail -60
+          errs=$(grep -c "SCRIPT ERROR" test.log || true)
+          res=$(grep "ИТОГ" test.log | tail -1)
+          echo "::notice title=Тесты::$res · ошибок скриптов: $errs · код $code"
+          if [ "$code" != "0" ] || [ "$errs" != "0" ]; then grep -B1 -A3 "SCRIPT ERROR\|ПРОВАЛ" test.log | head -60; exit 1; fi
+
+      - name: Подготовить Android (ключ отладки, пути SDK)
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -v -keystore $HOME/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" > /dev/null 2>&1
+          mkdir -p ~/.config/godot
+          JAVA=${JAVA_HOME_17_X64:-$JAVA_HOME}
+          cat > ~/.config/godot/editor_settings-4.4.tres <<EOT
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/java_sdk_path = "$JAVA"
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/debug_keystore = "$HOME/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOT
+          sed -i 's/^          //' ~/.config/godot/editor_settings-4.4.tres
+          cat ~/.config/godot/editor_settings-4.4.tres
+          ls "$ANDROID_HOME" | head; ls "$ANDROID_HOME/build-tools" | tail -3
+
+      - name: Экспорт
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /home/runner/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          set -uo pipefail
+          mkdir -p out/windows out/linux out/web out/android dist
+          fail=0
+          exp() { # имя пресета, флаг, путь
+            echo "=== $1"
+            ~/godot/godot --headless --path game "$2" "$1" "$PWD/$3" > "exp_$4.log" 2>&1
+            if [ ! -s "$3" ]; then echo "::error title=Экспорт $1::не получилось"; grep -i "error" "exp_$4.log" | grep -v "Parameter \"t\"" | head -15; fail=1; else ls -l "$3"; fi
+          }
+          exp "Windows Desktop" --export-release out/windows/$NAME.exe win
+          exp "Linux" --export-release out/linux/$NAME.x86_64 linux
+          exp "Web" --export-release out/web/index.html web
+          exp "Android" --export-debug out/android/$NAME.apk android
+          cp game/CREDITS.md out/windows/ 2>/dev/null || true
+          cp game/CREDITS.md out/linux/ 2>/dev/null || true
+          (cd out/windows && rm -f *.console.exe && zip -q -9 -r ../../dist/$NAME-windows.zip .) || true
+          (cd out/linux && chmod +x $NAME.x86_64 && zip -q -9 -r ../../dist/$NAME-linux.zip .) || true
+          (cd out/web && zip -q -9 -r ../../dist/$NAME-web.zip .) || true
+          cp out/android/$NAME.apk dist/$NAME-android.apk 2>/dev/null || true
+          ls -l dist
+          echo "::notice title=Сборки::$(ls -l dist | awk 'NR>1{printf "%s %.0f МБ; ", $9, $5/1048576}')"
+          if [ -s dist/$NAME-android.apk ]; then
+            BT=$(ls -d $ANDROID_HOME/build-tools/* | tail -1)
+            "$BT/apksigner" verify --print-certs dist/$NAME-android.apk | head -3 || true
+            "$BT/aapt" dump badging dist/$NAME-android.apk | grep -E "^package|sdkVersion|native-code" | head -5 || true
+          fi
+          exit $fail
+
+      - name: Проверить Linux-сборку (запуск без окна)
+        run: |
+          set -uo pipefail
+          timeout 300 out/linux/$NAME.x86_64 --headless --fixed-fps 60 -- --test=smoke --nosave > run_linux.log 2>&1
+          echo "код $?"; grep "ИТОГ\|ПРОВАЛ\|SCRIPT ERROR" run_linux.log | head -10
+          echo "::notice title=Linux-сборка::$(grep "ИТОГ" run_linux.log | tail -1)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: builds
+          path: dist/*
+          retention-days: 14
+
+      - name: Выложить в Releases (v2-latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          gh release delete v2-latest --yes --cleanup-tag > /dev/null 2>&1 || true
+          sleep 3
+          gh release create v2-latest dist/* --target "$GITHUB_SHA" --prerelease --title "Меллстройность 3D — сборка на Godot (последняя)" \
+            --notes "Автоматическая сборка из ветки \`${GITHUB_REF_NAME}\` ($(echo $GITHUB_SHA | cut -c1-7)). Windows: распаковать и запустить Mellstroynost-3D.exe. Android: установить APK (разрешить установку из неизвестных источников). Linux: распаковать, запустить Mellstroynost-3D.x86_64."
+          echo "::notice title=Релиз::https://github.com/${GITHUB_REPOSITORY}/releases/tag/v2-latest"
+
+  windows-check:
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: builds
+      - name: Запустить сборку под Windows без окна и прогнать сценарий
+        shell: pwsh
+        run: |
+          Expand-Archive -Path "$env:NAME-windows.zip" -DestinationPath win
+          $p = Start-Process -FilePath "win\$env:NAME.exe" -ArgumentList "--headless","--fixed-fps","60","--","--test=smoke","--nosave" -RedirectStandardOutput out.log -RedirectStandardError err.log -PassThru -NoNewWindow
+          if (-not $p.WaitForExit(600000)) { $p.Kill(); Write-Output "::error title=Windows::зависло" ; exit 1 }
+          $res = (Select-String -Path out.log -Pattern "ИТОГ" | Select-Object -Last 1).Line
+          $errs = (Select-String -Path out.log,err.log -Pattern "SCRIPT ERROR").Count
+          Write-Output "::notice title=Windows-сборка::$res · ошибок скриптов: $errs · код $($p.ExitCode)"
+          Get-Content out.log -Tail 25
+          if ($p.ExitCode -ne 0) { exit 1 }
