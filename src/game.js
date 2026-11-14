@@ -34,13 +34,13 @@ export class Game {
   }
   *load(id, cpId = 'start', menu = false) {
     if (this.loading) return; this.loading = true; const ui = G.ui, p = G.player, def = LEVELS[id]; G.mode = 'cut'; ui.close(); p.lock = true;
-    yield* ui.fadeTo(1, .3); yield;
+    ui.fade.dataset.t = 'ЗАГРУЗКА ВКУСНОСТЕЙ…'; ui.fade.classList.add('load'); yield* ui.fadeTo(1, .3); yield; yield;
     this.unload(); const L = G.level = new Level(def); G.gfx.scene.add(L.group); L.cps = {}; G.gfx.setEnv(def.env); G.fx.weather(def.weather || null);
     def.build(L); L.finish(); G.gfx.lamps = L.lamps;
     const cp = L.cps[cpId] || L.cps.start || [0, 0, 0, 0]; p.reset(); p.place(cp[0], cp[1], cp[2], cp[3] || 0); p.hidden = menu; p.root.visible = !menu; G.cam.snap(); G.cam.update(.016);
     if (!menu) { const S = G.save; S.level = id; S.cp = L.cps[cpId] ? cpId : 'start'; const pr = ls.get(PROG) || []; if (!pr.includes(id)) { pr.push(id); ls.set(PROG, pr); } }
     try { G.gfx.renderer.compile(G.gfx.scene, G.gfx.camera); } catch (e) { }
-    yield; yield; G.audio.music(def.music); this.loading = false; p.lock = false;
+    yield; yield; ui.fade.classList.remove('load'); G.audio.music(def.music); this.loading = false; p.lock = false;
     if (menu) { G.mode = 'menu'; ui.menu(); if (L.start) G.run(L.start()); yield* ui.fadeTo(0, .6); return; }
     this.write(); G.mode = 'play'; G.input.pressed = {};
     if (!this.flag('seen_' + id)) { this.setFlag('seen_' + id); ui.bigTitle(def.title, def.sub || ''); } else if (def.title) ui.toast(def.title, 'hint');
