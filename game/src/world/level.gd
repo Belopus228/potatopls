@@ -35,6 +35,7 @@ var inter: Array = []
 var trigs: Array = []
 var ticks: Array[Callable] = []
 var zones: Array = []
+var hazards: Array = []
 var t := 0.0
 var rng := RandomNumberGenerator.new()
 var wenv: WorldEnvironment
@@ -100,6 +101,15 @@ func _physics_process(dt: float) -> void:
 			var h2: Vector3 = z["half"]
 			if d2.x <= h2.x and d2.y <= h2.y and d2.z <= h2.z:
 				z["fn"].call(dt)
+	for hz in hazards:
+		var on: bool = hz["active"] and (float(hz["off"]) <= 0.0 or fmod(t + float(hz["ph"]), float(hz["on"]) + float(hz["off"])) < float(hz["on"]))
+		(hz["mesh"] as MeshInstance3D).visible = on
+		if on and G.mode == "play":
+			var hc: Vector3 = hz["c"]
+			var hs: Vector3 = hz["s"]
+			var d3: Vector3 = (p.global_position + Vector3(0, 0.9, 0) - hc).abs()
+			if d3.x <= hs.x * 0.5 + 0.3 and d3.y <= hs.y * 0.5 + 0.9 and d3.z <= hs.z * 0.5 + 0.3:
+				p.hurt(float(hz["dmg"]), hc if hz["push"] == null else p.global_position - (hz["push"] as Vector3), float(hz["kb"]))
 	for f in ticks:
 		f.call(dt)
 	_update_lamps(dt)
@@ -744,3 +754,177 @@ func say(lines: Array) -> void:
 func title_card() -> void:
 	if title != "":
 		G.ui.big_title(title, chapter)
+
+
+# ---------- готовые детали ----------
+
+## Скамейка: p — середина сиденья на земле, yaw в градусах.
+func bench(p: Vector3, yaw := 0.0, mat: Variant = "wood") -> void:
+	var b := Basis.from_euler(Vector3(0, deg_to_rad(yaw), 0))
+	box(p + Vector3(0, 0.45, 0), Vector3(1.8, 0.1, 0.5), mat, {"yaw": yaw})
+	box(p + b * Vector3(0, 0.8, -0.24), Vector3(1.8, 0.45, 0.08), mat, {"yaw": yaw, "col": false})
+	for sx in [-0.75, 0.75]:
+		box(p + b * Vector3(sx, 0.22, 0), Vector3(0.1, 0.44, 0.45), "metal_dark", {"yaw": yaw, "col": false})
+
+
+## Забор: столбики и две жерди; невидимая стена не даёт перепрыгнуть.
+func fence(x0: float, z0: float, x1: float, z1: float, h := 1.1, mat: Variant = "wood") -> void:
+	var a := Vector3(x0, 0, z0)
+	var d := Vector3(x1 - x0, 0, z1 - z0)
+	var n := maxi(1, int(round(d.length() / 2.2)))
+	for i in n + 1:
+		box(a + d * (float(i) / n) + Vector3(0, h * 0.5, 0), Vector3(0.14, h, 0.14), mat, {"col": false})
+	wall(x0, z0, x1, z1, h * 0.72, 0.1, mat, 0.06, {"col": false})
+	wall(x0, z0, x1, z1, h * 0.34, 0.1, mat, 0.06, {"col": false})
+	wall(x0, z0, x1, z1, 0.0, 3.2, mat, 0.2, {"hidden": true})
+
+
+## Изба: сруб с двускатной крышей, дверью и окнами. c — центр пола, s — (ширина по X, высота стен, глубина по Z).
+## o: door — сторона двери ("s", "n", "e", "w"), mat, roof, lit — окна светятся.
+func hut(c: Vector3, s: Vector3, o := {}) -> void:
+	var mat: Variant = o.get("mat", "logs")
+	var rmat: Variant = o.get("roof", "roof")
+	box(c + Vector3(0, s.y * 0.5, 0), s, mat)
+	var along_x: bool = s.x >= s.z
+	var span := s.z if along_x else s.x
+	var rise: float = o.get("rise", span * 0.42)
+	var ov := 0.45
+	for sg in [-1.0, 1.0]:
+		if along_x:
+			ramp(c + Vector3(0, s.y - 0.15, sg * (s.z * 0.5 + ov)), c + Vector3(0, s.y + rise, 0), s.x + ov * 2.0, rmat, 0.18)
+		else:
+			ramp(c + Vector3(sg * (s.x * 0.5 + ov), s.y - 0.15, 0), c + Vector3(0, s.y + rise, 0), s.z + ov * 2.0, rmat, 0.18)
+		for i in 4:
+			var f := (i + 0.5) / 4.0
+			var wd := span * (1.0 - f) * 0.96
+			if along_x:
+				box(c + Vector3(sg * (s.x * 0.5 - 0.1), s.y + rise * f * 0.94, 0), Vector3(0.2, rise / 4.0 + 0.02, wd), mat, {"col": false})
+			else:
+				box(c + Vector3(0, s.y + rise * f * 0.94, sg * (s.z * 0.5 - 0.1)), Vector3(wd, rise / 4.0 + 0.02, 0.2), mat, {"col": false})
+	var side: String = o.get("door", "s")
+	var dn: Vector3 = {"s": Vector3(0, 0, 1), "n": Vector3(0, 0, -1), "e": Vector3(1, 0, 0), "w": Vector3(-1, 0, 0)}[side]
+	var zside: bool = absf(dn.z) > 0.5
+	var half := (s.z if zside else s.x) * 0.5
+	var wide := s.x if zside else s.z
+	var al := Vector3(1, 0, 0) if zside else Vector3(0, 0, 1)
+	box(c + dn * (half + 0.03) + Vector3(0, 1.0, 0), Vector3(1.0, 2.0, 0.1) if zside else Vector3(0.1, 2.0, 1.0), "wood_dark", {"col": false})
+	var wm: Variant = Mats.glow(Color(1.0, 0.78, 0.42), 1.5) if (not is_day or o.get("lit", false)) else Color(0.5, 0.68, 0.82)
+	if wide > 4.4:
+		for sx in [-1.0, 1.0]:
+			var wp: Vector3 = c + dn * (half + 0.03) + al * (sx * wide * 0.31) + Vector3(0, minf(1.55, s.y * 0.56), 0)
+			box(wp - dn * 0.01, Vector3(1.1, 1.1, 0.08) if zside else Vector3(0.08, 1.1, 1.1), Color(0.9, 0.9, 0.86), {"col": false})
+			box(wp + dn * 0.02, Vector3(0.86, 0.86, 0.08) if zside else Vector3(0.08, 0.86, 0.86), wm, {"col": false})
+
+
+## Вагон «поеза» или трамвай: c — середина на уровне рельсов, ln — длина; along_x — вдоль оси X.
+func wagon(c: Vector3, ln: float, col: Color, along_x := false, o := {}) -> void:
+	var w: float = o.get("w", 3.0)
+	var h: float = o.get("h", 2.9)
+	var base: float = o.get("base", 0.55)
+	var sz := Vector3(ln, h, w) if along_x else Vector3(w, h, ln)
+	var e := Vector3(0.05, 0, 0.07) if along_x else Vector3(0.07, 0, 0.05)
+	box(c + Vector3(0, base + h * 0.5, 0), sz, col)
+	var win: Variant = Mats.glow(Color(1.0, 0.92, 0.7), 1.3) if not is_day else Color(0.16, 0.22, 0.3)
+	box(c + Vector3(0, base + h * 0.64, 0), Vector3(sz.x, h * 0.3, sz.z) + e, win, {"col": false})
+	box(c + Vector3(0, base + h * 0.3, 0), Vector3(sz.x, h * 0.08, sz.z) + e * 1.2, o.get("stripe", Color(0.92, 0.92, 0.9)), {"col": false})
+	box(c + Vector3(0, base + h + 0.08, 0), Vector3(sz.x * 0.94, 0.16, sz.z * 0.94) if along_x else Vector3(sz.x * 0.9, 0.16, sz.z * 0.97), "metal_dark", {"col": false})
+	for k in [-0.34, 0.34]:
+		var wp := c + (Vector3(ln * k, 0.5, 0) if along_x else Vector3(0, 0.5, ln * k))
+		var cm := cyl(wp, 0.5, w + 0.1, "black", {"col": false, "seg": 10})
+		if along_x:
+			cm.rotation.x = PI * 0.5
+		else:
+			cm.rotation.z = PI * 0.5
+
+
+## Волна врагов: list — [[вид, позиция, {опции}], …]. Когда все убиты, зовётся on_clear. Возвращает врагов.
+func wave(list: Array, on_clear := Callable(), alert := true) -> Array:
+	var out: Array = []
+	var left := [list.size()]
+	for it in list:
+		var o: Dictionary = (it[2] as Dictionary).duplicate() if it.size() > 2 else {}
+		if alert and not o.has("alert"):
+			o["alert"] = true
+		var e := enemy(it[0], it[1], o)
+		if alert:
+			Fx.puff(self, (it[1] as Vector3) + Vector3(0, 0.6, 0), Color(0.8, 0.8, 0.85, 0.7), 8)
+		out.append(e)
+		e.on_death = func():
+			left[0] -= 1
+			if left[0] <= 0 and on_clear.is_valid():
+				on_clear.call()
+	return out
+
+
+## Преграда, которую можно снять (туман, паутина, решётка): barrier(...) возвращает словарь для barrier_off().
+func barrier(c: Vector3, s: Vector3, col := Color(0.65, 0.68, 0.75, 0.5), yaw := 0.0) -> Dictionary:
+	var cs := blocker(c, s, yaw)
+	var mi := mesh_box(s, col)
+	mi.position = c
+	mi.rotation.y = deg_to_rad(yaw)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return {"col": cs, "vis": mi}
+
+
+func barrier_off(b: Dictionary) -> void:
+	if b.is_empty():
+		return
+	(b["col"] as CollisionShape3D).set_deferred("disabled", true)
+	if is_instance_valid(b["vis"]):
+		(b["vis"] as Node).queue_free()
+	b.clear()
+
+
+## Станция прибытия: платформа (верх на c.y), «поез» с юга, лестница на север, вывеска и машинист, который увезёт обратно в Мурино.
+func arrival(c: Vector3, station: String, o := {}) -> void:
+	var col: Color = o.get("col", Color(0.16, 0.3, 0.62))
+	var y := c.y
+	slab(c.x - 14, c.z - 4, c.x + 14, c.z + 4, y, o.get("mat", "concrete_dark"), y + 0.4)
+	stairs(Vector3(c.x, 0, c.z - 6.8), Vector3(c.x, y, c.z - 4.0), 6.0, "concrete")
+	slab(c.x - 60, c.z + 4.6, c.x + 60, c.z + 7.8, 0.3, "rust", 0.3, {"col": false})
+	wagon(Vector3(c.x - 7.3, y - 0.55, c.z + 6.2), 14.0, col, true)
+	wagon(Vector3(c.x + 7.3, y - 0.55, c.z + 6.2), 14.0, col, true)
+	blocker(Vector3(c.x, y + 2, c.z + 4.4), Vector3(120, 10, 0.5))
+	for sx in [-14.0, 14.0]:
+		blocker(Vector3(c.x + sx * 1.02, y + 1.5, c.z), Vector3(0.4, 3, 8))
+	for sx in [-4.2, 4.2]:
+		cyl(Vector3(c.x + sx, y + 2.5, c.z - 3.6), 0.08, 5.0, "metal_dark")
+	board(station, Vector3(c.x, y + 4.5, c.z - 3.56), 0, 8.4, 0.9, {"col": Color(1.0, 0.85, 0.2), "bg": Color(0.06, 0.08, 0.18)})
+	board(station, Vector3(c.x, y + 4.5, c.z - 3.64), 180, 8.4, 0.9, {"col": Color(1.0, 0.85, 0.2), "bg": Color(0.06, 0.08, 0.18)})
+	bench(Vector3(c.x - 9, y, c.z - 3.0), 0)
+	bench(Vector3(c.x + 9, y, c.z - 3.0), 0)
+	if not is_day:
+		lamp(Vector3(c.x - 6, y + 3.6, c.z), Color(1.0, 0.9, 0.7), 2.8, 14.0)
+		lamp(Vector3(c.x + 6, y + 3.6, c.z), Color(1.0, 0.9, 0.7), 2.8, 14.0)
+	npc("mashinist", Vector3(c.x + 3.0, y, c.z + 2.6), 0, {"label": "Уехать в Мурино", "r": 2.6, "talk": go_home})
+
+
+func go_home() -> void:
+	var c: int = await G.ui.choose("mashinist", "Обратно в Мурино? «Поез» ждать не любит. Но подождёт.", ["Поехали", "Остаться"])
+	if c == 0:
+		G.travel("murino", "station")
+
+
+## Опасная завеса (душ, пар, ток): коробка, которая по таймеру включается и выключается; задел — урон.
+## o: on, off (секунды; off = 0 — горит всегда), phase, dmg, kb, col, push (Vector3 — куда отбрасывать).
+func hazard(c: Vector3, s: Vector3, o := {}) -> Dictionary:
+	var mi := mesh_box(s, o.get("col", Color(0.6, 0.85, 1.0, 0.55)))
+	mi.position = c
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var h := {"mesh": mi, "c": c, "s": s, "on": o.get("on", 1.3), "off": o.get("off", 1.3), "ph": o.get("phase", 0.0), "dmg": o.get("dmg", 9.0), "kb": o.get("kb", 6.0), "active": true, "push": o.get("push")}
+	hazards.append(h)
+	return h
+
+
+## Ларёк: c — центр, yaw — куда смотрит витрина (0 — на юг), вывеска и подпись.
+func kiosk(c: Vector3, yaw: float, name1: String, col: Color, sub := "", body_mat: Variant = "metal_dark") -> void:
+	var b := Basis.from_euler(Vector3(0, deg_to_rad(yaw), 0))
+	box(c + Vector3(0, 1.4, 0), Vector3(4.0, 2.8, 3.0), body_mat, {"yaw": yaw})
+	box(c + Vector3(0, 2.95, 0), Vector3(4.6, 0.3, 3.6), col, {"yaw": yaw, "col": false})
+	box(c + b * Vector3(0, 1.65, 1.52), Vector3(2.6, 1.0, 0.06), Mats.glow(Color(1.0, 0.88, 0.6), 1.5 if not is_day else 0.6), {"yaw": yaw, "col": false})
+	box(c + b * Vector3(0, 1.05, 1.75), Vector3(2.8, 0.1, 0.5), "metal", {"yaw": yaw, "col": false})
+	txt(name1, c + b * Vector3(0, 3.55, 1.82), yaw, 0.5, {"col": col, "glow": 1.6 if not is_day else 0.0})
+	if sub != "":
+		txt(sub, c + b * Vector3(0, 2.45, 1.56), yaw, 0.2, {"col": Color.WHITE, "glow": 0.6 if not is_day else 0.0})
+	if not is_day:
+		lamp(c + b * Vector3(0, 2.2, 3.0), Color(1.0, 0.82, 0.5), 2.8, 10.0)

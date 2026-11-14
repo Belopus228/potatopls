@@ -28,8 +28,8 @@ func build() -> void:
 	_station()
 	_people()
 	cp("start", Vector3(-64, 0.1, 0), -90)
-	cp("lobby", Vector3(0, 0.1, 60), 0)
-	cp("roof", Vector3(0, RY + 0.1, 66.5), 0)
+	cp("lobby", Vector3(0, 0.1, 60), 180)
+	cp("roof", Vector3(0, RY + 0.1, 66.5), 180)
 	cp("station", Vector3(56, 1.0, -24), 90)
 
 
@@ -116,7 +116,7 @@ func _p46() -> void:
 	interact(Vector3(0, RY + 1.0, 65.6), 2.2, "Ливт вниз", func():
 		await cut(func():
 			await G.ui.fade_to(1.0, 0.4)
-			G.player.place(Vector3(0, 0.1, 72.5), PI)
+			G.player.place(Vector3(0, 0.1, 72.5), 0.0)
 			G.cam.snap()
 			await G.wait(0.3)
 			await G.ui.fade_to(0.0, 0.4))
@@ -127,7 +127,7 @@ func _p46() -> void:
 		boss.global_position = Vector3(0, RY + 0.1, 78)
 		boss.home = boss.global_position
 		boss.arena = Vector3(0, RY, 74)
-		boss.set_yaw(PI)
+		boss.set_yaw(0.0)
 		boss.model.play("Dance", 0.0)
 		boss.on_defeat = _boss_dead
 		trigger(Vector3(0, RY + 1.5, 70.5), Vector3(12, 2.5, 2.0), _boss_intro)
@@ -320,20 +320,20 @@ func _station() -> void:
 
 
 func _people() -> void:
-	drun = npc("drun", Vector3(-32.4, 0, 6.6), 150, {"talk": _talk_drun, "mark": "" if G.flag("m_drun") else "!"})
-	npc("ashot", Vector3(-36, 0, 6.6), 180, {"mark": "₽", "label": "Купить", "talk": func():
+	drun = npc("drun", Vector3(-32.4, 0, 6.6), -20, {"talk": _talk_drun, "mark": "" if G.flag("m_drun") else "!"})
+	npc("ashot", Vector3(-36, 0, 6.6), 0, {"mark": "₽", "label": "Купить", "talk": func():
 		await say([["ashot", "Шаверма, брат! С мясом! Каким — не спрашивай."]])
 		Menus.shop(G.ui, "ШАВЕРМА У АШОТА", "Сколько-сколько?", ["shawa", "doshik", "banana", "plums", "energy"])
 		await G.ui.panel_closed})
-	npc("seller", Vector3(-24, 0, -7.6), 0, {"mark": "₽", "label": "Купить", "name": "Продавщица", "talk": func():
+	npc("seller", Vector3(-24, 0, -7.6), 180, {"mark": "₽", "label": "Купить", "name": "Продавщица", "talk": func():
 		await say([[{"n": "Продавщица"}, "Вкусности, цепи, барсетки. Берём, не стесняемся."]])
 		Menus.shop(G.ui, "ПРОДУКТЫ 24", "Вкусности и цепи", ["tasty", "chain", "heavy", "magnet", "bread"])
 		await G.ui.panel_closed})
-	courier = npc("courier", Vector3(22.6, 0, 27.6), 180, {"talk": _talk_courier, "mark": "" if G.flag("m_courier") else "?"})
-	npc("mashinist", Vector3(60, 0.9, -21), -90, {"talk": _talk_train, "label": "Сесть на «поез»", "r": 2.8})
+	courier = npc("courier", Vector3(22.6, 0, 27.6), 0, {"talk": _talk_courier, "mark": "" if G.flag("m_courier") else "?"})
+	npc("mashinist", Vector3(60, 0.9, -21), 90, {"talk": _talk_train, "label": "Сесть на «поез»", "r": 2.8})
 	# бабушка на лавке
 	npc({"rig": "women", "body": "formal", "colors": {"LimeGreen": Color("7a3a4a"), "Red": Color("d8d8d8"), "Brown": Color("5a4a3a"), "Skin": Color("e0b8a0"), "Gold": Color("c0a060")}},
-		Vector3(-9.5, 0, 6.3), 0, {"name": "Бабушка", "anim": "Sit", "solid": false, "look": false, "mark": "" if G.flag("m_granny") else "?", "talk": _talk_granny})
+		Vector3(-9.5, 0, 6.3), 180, {"name": "Бабушка", "anim": "Sit", "solid": false, "look": false, "mark": "" if G.flag("m_granny") else "?", "talk": _talk_granny})
 	# жители на корточках
 	npc(Bestiary.GOP2, Vector3(9.8, 0, 6.9), 20, {"name": "Сосед по двору", "anim": "Squat", "talk": func():
 		await say([[{"n": "Сосед по двору"}, "Слышь, Ч. Говорят, на крыше П-46 кто-то туман гонит. Чёрный такой. Весь в чёрном."], [{"n": "Сосед по двору"}, "А в гаражах пакостники сидят. На корточках. Как я. Но злые."]])})
@@ -487,7 +487,7 @@ func _lift() -> void:
 		await say([["lift", "«МАРШРУТ ПРИНЯТ. ЭТАЖ: КРЫША. КНОПКИ ПЕРВОГО ЭТАЖА ОТСУТСТВУЮТ»."]])
 		await G.ui.fade_to(1.0, 0.5)
 		Snd.sfx("lift", 0.0)
-		G.player.place(Vector3(0, RY + 0.1, 66.6), 0.0)
+		G.player.place(Vector3(0, RY + 0.1, 66.6), PI)
 		G.cam.snap()
 		await G.wait(1.0)
 		G.checkpoint("roof", true)

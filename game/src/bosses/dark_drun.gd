@@ -6,10 +6,6 @@ extends Boss
 var hits_left := 0
 var orbs_left := 0
 var cycle := 0
-var ring_r := 0.0
-var ring_on := false
-var ring_hit := false
-var ring_mesh: MeshInstance3D
 
 
 func _init() -> void:
@@ -41,7 +37,6 @@ func _ai(dt: float) -> void:
 		play("Idle", 0.3)
 		return
 	var d := player_dist()
-	_ring_tick(dt)
 	match state:
 		"rest":
 			face(p.global_position)
@@ -149,46 +144,9 @@ func _ai(dt: float) -> void:
 		"hamam_w":
 			_stop(dt)
 			if st >= 0.8:
-				ring_on = true
-				ring_hit = false
-				ring_r = 0.5
+				ring_start(global_position, 9.0, 22.0, 12.0)
 				G.cam.shake(0.5)
 				Snd.sfx("am", 0.0, 0.6)
 				set_state("rest")
 		_:
 			set_state("rest")
-
-
-func _ring_tick(dt: float) -> void:
-	if not ring_on:
-		return
-	if ring_mesh == null:
-		ring_mesh = MeshInstance3D.new()
-		var tm := TorusMesh.new()
-		tm.inner_radius = 0.92
-		tm.outer_radius = 1.0
-		tm.rings = 40
-		tm.ring_segments = 6
-		ring_mesh.mesh = tm
-		ring_mesh.material_override = Mats.glow(Color(0.6, 0.25, 1.0), 3.0)
-		ring_mesh.top_level = true
-		add_child(ring_mesh)
-	ring_r += dt * 9.0
-	ring_mesh.visible = true
-	ring_mesh.global_position = Vector3(global_position.x, global_position.y + 0.25, global_position.z) if ring_r < 1.0 else ring_mesh.global_position
-	ring_mesh.scale = Vector3(ring_r, 0.6, ring_r)
-	var p := G.player
-	var pd := Vector2(p.global_position.x - ring_mesh.global_position.x, p.global_position.z - ring_mesh.global_position.z).length()
-	if not ring_hit and absf(pd - ring_r) < 0.7 and p.global_position.y - ring_mesh.global_position.y < 0.55:
-		if p.hurt(12.0, ring_mesh.global_position, 7.0):
-			ring_hit = true
-	if ring_r > 22.0:
-		ring_on = false
-		ring_mesh.visible = false
-
-
-func die(silent := false) -> void:
-	if ring_mesh:
-		ring_mesh.visible = false
-	ring_on = false
-	super.die(silent)

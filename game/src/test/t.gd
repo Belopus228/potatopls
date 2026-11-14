@@ -208,7 +208,7 @@ func fight(max_sec := 60.0) -> bool:
 				else:
 					Inp.release("throw")
 			# кольца по земле — перепрыгнуть
-			if tgt.get("ring_on") == true and absf(Vector2(p.global_position.x - tgt.global_position.x, p.global_position.z - tgt.global_position.z).length() - float(tgt.get("ring_r"))) < 2.2 and p.is_on_floor():
+			if tgt.get("ring_on") == true and absf(Vector2(p.global_position.x - tgt.ring_c.x, p.global_position.z - tgt.ring_c.z).length() - float(tgt.get("ring_r"))) < 2.2 and p.is_on_floor():
 				Inp.press("jump")
 			if p.hp < p.hp_max * 0.45 and p.food_count() > 0 and i % 40 == 0:
 				p.eat()

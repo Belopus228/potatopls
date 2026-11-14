@@ -9,6 +9,11 @@ var arena_r := 12.0
 var open_t := 0.0                   # сколько ещё босс «открыт» (получает полный урон)
 var base_guard := 0.3
 var music_after := ""
+var rings: Array = []               # расходящиеся кольца по земле: их надо перепрыгивать
+var ring_on := false
+var ring_r := 0.0
+var ring_c := Vector3.ZERO
+var drops: Array = []               # отложенные удары по площади (красные круги)
 
 
 func init_boss(nm: String, hp_total: float, mdl: Model, r: float, h: float) -> void:
@@ -44,7 +49,126 @@ func _physics_process(dt: float) -> void:
 		if open_t <= 0.0:
 			guard = base_guard
 			_on_closed()
+	if not dead and G.mode == "play":
+		_rings_tick(dt)
+		_drops_tick(dt)
 	super._physics_process(dt)
+
+
+## Кольцо по земле от точки c: расходится со скоростью speed; кто не подпрыгнул — получает dmg.
+func ring_start(c: Vector3, speed := 9.0, max_r := 22.0, dmg := 12.0, col := Color(0.6, 0.25, 1.0)) -> void:
+	var mi := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.92
+	tm.outer_radius = 1.0
+	tm.rings = 40
+	tm.ring_segments = 6
+	mi.mesh = tm
+	mi.material_override = Mats.glow(col, 3.0)
+	get_parent().add_child(mi)
+	mi.global_position = c + Vector3(0, 0.25, 0)
+	mi.scale = Vector3(0.5, 0.6, 0.5)
+	rings.append({"mesh": mi, "c": c, "r": 0.5, "speed": speed, "max": max_r, "dmg": dmg, "hit": false})
+	ring_on = true
+	ring_r = 0.5
+	ring_c = c
+
+
+func _rings_tick(dt: float) -> void:
+	if rings.is_empty():
+		ring_on = false
+		return
+	var p := G.player
+	var best := 1e9
+	ring_on = false
+	for r in rings.duplicate():
+		var rr: float = float(r["r"]) + dt * float(r["speed"])
+		r["r"] = rr
+		var mi: MeshInstance3D = r["mesh"]
+		var c: Vector3 = r["c"]
+		if rr > float(r["max"]) or not is_instance_valid(mi):
+			if is_instance_valid(mi):
+				mi.queue_free()
+			rings.erase(r)
+			continue
+		mi.scale = Vector3(rr, 0.6, rr)
+		var pd := Vector2(p.global_position.x - c.x, p.global_position.z - c.z).length()
+		var dy := p.global_position.y - c.y
+		if not r["hit"] and absf(pd - rr) < 0.7 and dy < 0.8 and dy > -2.0:
+			if p.hurt(float(r["dmg"]), c, 7.0):
+				r["hit"] = true
+		ring_on = true
+		if absf(pd - rr) < best:
+			best = absf(pd - rr)
+			ring_r = rr
+			ring_c = c
+
+
+func clear_rings() -> void:
+	for r in rings:
+		if is_instance_valid(r["mesh"]):
+			(r["mesh"] as Node).queue_free()
+	rings.clear()
+	drops.clear()
+	ring_on = false
+
+
+## Удар по площади с задержкой: красный круг предупреждает, через delay секунд — взрыв.
+func drop(pos: Vector3, r: float, delay: float, dmg: float, fx_col := Color(0.8, 0.9, 1.0), warn_col := Color(1, 0.2, 0.15, 0.45)) -> void:
+	Fx.warn(get_parent(), pos, r, delay, warn_col)
+	drops.append({"pos": pos, "r": r, "t": delay, "dmg": dmg, "col": fx_col})
+
+
+func _drops_tick(dt: float) -> void:
+	for d in drops.duplicate():
+		d["t"] = float(d["t"]) - dt
+		if float(d["t"]) <= 0.0:
+			drops.erase(d)
+			var pos: Vector3 = d["pos"]
+			blast(pos, float(d["r"]), float(d["dmg"]), 8.0, 2.5)
+			Fx.burst(get_parent(), pos + Vector3(0, 0.5, 0), d["col"], 12, 7.0)
+			Fx.ring(get_parent(), pos + Vector3(0, 0.2, 0), d["col"], float(d["r"]), 0.25)
+			Snd.sfx("crash", -7.0, 1.4)
+
+
+## Выстрел(ы) в игрока: n снарядов веером с шагом spread (радианы).
+func shoot(shot_kind: String, speed: float, dmg: float, n := 1, spread := 0.0, o := {}) -> void:
+	var from := global_position + Vector3(0, height * 0.7, 0) + fwd() * (radius + 0.4)
+	var base := (G.player.center() - from).normalized()
+	for i in n:
+		var a := (i - (n - 1) * 0.5) * spread
+		Shot.fire(get_parent(), shot_kind, from, base.rotated(Vector3.UP, a) * speed, dmg, "enemy", o)
+
+
+## Позвать подмогу: n врагов вокруг босса.
+func summon(enemy_kind: String, n: int, r := 5.0, o := {}) -> void:
+	var o2 := o.duplicate()
+	o2["alert"] = true
+	for i in n:
+		var a := TAU * i / n + randf()
+		var pos := clamp_arena(global_position + Vector3(cos(a), 0, sin(a)) * r, 1.5)
+		pos.y = global_position.y + 0.3
+		G.level.enemy(enemy_kind, pos, o2)
+		Fx.puff(get_parent(), pos + Vector3(0, 0.5, 0), Color(0.9, 0.9, 0.9, 0.7), 6)
+
+
+func clamp_arena(p: Vector3, margin := 2.0) -> Vector3:
+	var d := p - arena
+	d.y = 0.0
+	d = d.limit_length(maxf(1.0, arena_r - margin))
+	return Vector3(arena.x + d.x, p.y, arena.z + d.z)
+
+
+## Возникнуть за спиной игрока.
+func blink_behind(dist := 2.0) -> void:
+	var p := G.player
+	Fx.puff(get_parent(), center(), Color(0.5, 0.5, 0.6, 0.6), 10)
+	var back := clamp_arena(p.global_position - p.fwd() * dist, 1.0)
+	back.y = p.global_position.y
+	global_position = back
+	face(p.global_position)
+	model.rotation.y = yaw
+	Fx.puff(get_parent(), center(), Color(0.5, 0.5, 0.6, 0.6), 10)
 
 
 ## Открыться: sec секунд босс получает полный урон.
@@ -89,6 +213,7 @@ func die(silent := false) -> void:
 		queue_free()
 		return
 	G.save["kills"] = int(G.save["kills"]) + 1
+	clear_rings()
 	G.ui.hud.set_boss(null)
 	play("death", 0.1, 0.7, true)
 	Snd.sfx("boss_die", 0.0)
