@@ -45,7 +45,7 @@ LEVELS.dorm = {
     for (let i = 0; i < 5; i++) ceilLamp(L, -16 + i * 8, H, 0, 0xfff0d0, 20, 11, i === 3 ? { flicker: 1 } : undefined);
     poster('МУРИНО —\nЭТО НЕ\nЖМУРИНО!', -9, 1.9, -1.43, 0, '#0d1626', '#7fe0ff', 1.6, 1.2); poster('ФОГ\nИДЁТ', 3, 1.9, 1.43, PI, '#d8dce2', '#111', 1.2, 1.3);
     // граффити-цифры кода
-    const gr = (n, x, y, z, ry, col) => L.sign('', x, y, z, 1.7, 1.7, ry, { tex: memo('gr' + code[n] + n, () => graffitiTex(code[n], col, n + 1)), bg: 'none' });
+    const gr = (n, x, y, z, ry, col) => { const t = graffitiTex(code[n], col, n + 1); L.trash.push(t); return L.sign('', x, y, z, 1.7, 1.7, ry, { tex: t, bg: 'none' }); };
     gr(0, -19.83, 1.7, -5.4, PI / 2, '#ff3b6b'); gr(1, 9.83, 1.7, 5.6, -PI / 2, '#3bd0ff'); gr(2, 16, 1.75, -7.43, 0, '#b6ff3b');
     // кухня
     L.box(0xe8e8e4, 15, .45, 7.1, 9.4, .9, .7, { gloss: 1 }); L.box(0x2a2a2e, 12.5, .92, 7.1, .7, .06, .6, { solid: false }); L.box(0x2a2a2e, 13.5, .92, 7.1, .7, .06, .6, { solid: false }); L.box(M.metal(), 16.5, .9, 7.1, 1, .08, .55, { solid: false });

@@ -77,7 +77,7 @@ class Body {
   flash(v) { this.fl = v; }
   _flash(dt) { if (this.fl > 0 || this._fz) { this.fl = Math.max(0, this.fl - dt * 5); this._fz = this.fl > 0; for (const m of this.mats) m.emissive.setScalar(this.fl * (m.userData.fk || 1)).add(m.userData.em || _c.set(0)); } this.shadow.visible = !G.gfx.renderer.shadowMap.enabled || !G.gfx.sun.castShadow; }
   play() { } set() { }
-  dispose() { this.root.removeFromParent(); this.root.traverse(o => { if (o.geometry && o.userData.own) o.geometry.dispose(); }); for (const m of this.mats) m.dispose(); }
+  dispose() { this.root.removeFromParent(); this.root.traverse(o => { if (o.geometry && o.userData.own) o.geometry.dispose(); if (o.isSkinnedMesh && o.skeleton) o.skeleton.dispose(); }); for (const m of this.mats) m.dispose(); }
 }
 export class Rig extends Body {
   constructor(sk, o, hY) {

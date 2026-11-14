@@ -108,7 +108,10 @@ export class Player {
     this.root.visible = !this.hidden && !(this.inv > 0 && this.hitInv && (G.time * 18 | 0) % 2);
     // интерактив рядом
     this.near = null;
-    if (ctl) { let best = 1e9; for (const it of L.inter) { if (it.off || (it.cond && !it.cond())) continue; const dx = it.pos.x - pos.x, dz = it.pos.z - pos.z, d = Math.hypot(dx, dz); if (d < it.r && d < best && Math.abs(it.pos.y - pos.y - .9) < 2.4) { best = d; this.near = it; } } }
+    if (ctl) { // ближайший интерактив; при прочих равных — тот, к которому игрок повёрнут лицом
+      let best = 1e9; const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
+      for (const it of L.inter) { if (it.off || (it.cond && !it.cond())) continue; const dx = it.pos.x - pos.x, dz = it.pos.z - pos.z, d = Math.hypot(dx, dz); if (d >= it.r || Math.abs(it.pos.y - pos.y - .9) >= 2.4) continue; const sc = d - (d > .3 ? (dx * fx + dz * fz) / d : 1) * .9; if (sc < best) { best = sc; this.near = it; } }
+    }
   }
   attack(wx, wz, wl) {
     const A = { ...ATK[this.combo % 3], t: 0, done: false }, pos = this.pos; this.combo++; this.comboT = .85;

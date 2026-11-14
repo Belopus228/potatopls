@@ -1,6 +1,7 @@
 // Сборка: весь проект в ОДИН файл docs/index.html (JS + CSS + картинки внутри).
 // node tools/build.mjs            — релизная сборка
 // node tools/build.mjs --watch --serve — разработка (пересборка + сервер)
+// node tools/build.mjs --dev --out=dev.html — несжатая сборка для отладки (docs/dev.html в .gitignore)
 import * as esbuild from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,7 +28,7 @@ const inline = {
   },
 };
 const opts = {
-  entryPoints: [path.join(root, entry)], bundle: true, format: 'iife', write: false, minify: !watch, charset: 'utf8', target: ['es2020'],
+  entryPoints: [path.join(root, entry)], bundle: true, format: 'iife', write: false, minify: !watch && !argv.includes('--dev'), charset: 'utf8', target: ['es2020'],
   loader: { '.jpg': 'dataurl', '.png': 'dataurl' }, plugins: [inline], logLevel: 'warning', legalComments: 'none',
   alias: { 'three/addons': path.join(root, 'node_modules/three/examples/jsm') },
 };

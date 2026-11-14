@@ -1,8 +1,8 @@
-// Прогон автотестов: node tools/test/all.mjs [full walk walk2 bosses misc audio]
+// Прогон автотестов: node tools/test/all.mjs [full walk walk2 bosses misc audio leak]
 // Игра открывается из docs/index.html в headless-Chromium (WebGL через SwiftShader) и проходится скриптом.
 import { spawnSync } from 'child_process'; import path from 'path'; import { fileURLToPath, pathToFileURL } from 'url';
 const dir = path.dirname(fileURLToPath(import.meta.url)), root = path.resolve(dir, '../..');
-const names = process.argv.slice(2).length ? process.argv.slice(2) : ['full', 'walk', 'walk2', 'bosses', 'misc', 'audio'];
+const names = process.argv.slice(2).length ? process.argv.slice(2) : ['full', 'walk', 'walk2', 'bosses', 'misc', 'audio', 'leak'];
 const url = pathToFileURL(path.join(root, 'docs/index.html')).href + '?nodyn&q=0'; let bad = 0;
 for (const n of names) {
   const t0 = Date.now(), r = spawnSync(process.execPath, [path.join(dir, 'run.mjs'), url, '320x180', path.join(dir, 'tests/common.js'), path.join(dir, `tests/${n}.js`)], { encoding: 'utf8', timeout: 900000, env: { ...process.env, AWS_LAMBDA_JS_RUNTIME: process.env.AWS_LAMBDA_JS_RUNTIME || 'nodejs22.x' } });

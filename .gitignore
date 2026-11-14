@@ -2,3 +2,4 @@ node_modules/
 image-search/
 .DS_Store
 *.log
+docs/dev.html

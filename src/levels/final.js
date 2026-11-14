@@ -35,7 +35,7 @@ class FogBody {
     });
     this.fl = Math.max(0, this.fl - dt * 4); this.mat.emissive.copy(this.em).lerp(this.hot, this.fl); this.mat.emissiveIntensity = .55 + this.fl;
   }
-  dispose() { this.root.removeFromParent(); this.root.traverse(o => { if (o.isSkinnedMesh) o.geometry.dispose(); }); this.mat.dispose(); this.fm.dispose(); }
+  dispose() { this.root.removeFromParent(); this.root.traverse(o => { if (o.isSkinnedMesh) { o.geometry.dispose(); if (o.skeleton) o.skeleton.dispose(); } }); this.mat.dispose(); this.fm.dispose(); }
 }
 // рука/лицо как цель: принимает удары за босса
 class FogPart {
