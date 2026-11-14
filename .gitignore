@@ -10,3 +10,4 @@ game/build/
 *.translation
 *.tmp
 __pycache__/
+out/
