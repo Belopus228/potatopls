@@ -19,6 +19,9 @@ var bral: Npc
 var vaht: Npc
 var hinted_fight := false
 var digit_pos: Array = []          # где нарисованы цифры кода (для проверки, что их ничто не закрывает)
+var room_door: Door                # дверь комнаты Ч: пока идёт обучение, заперта
+var tut_crate: Crate
+var _tut := {}
 
 
 func build() -> void:
@@ -122,6 +125,10 @@ func _bedroom(cx: float, north: bool, variant: int, win_dx := 0.0) -> void:
 func _rooms() -> void:
 	# 1 — комната Ч
 	_bedroom(-21, true, 0)
+	room_door = door(Vector3(-21, 0, -1.6), 0, {"w": 1.3, "label": "Открыть дверь", "r": 1.9, "mat": Color(0.46, 0.33, 0.23),
+		"locked": func(): return "Сначала разомнись: обучение ещё идёт" if tutor_on and tutor_i < 7 else ""})
+	if G.flag("d_call"):
+		room_door.set_open(true, true)
 	txt("ЧТО ЗА\nБИЗНЕС?", Vector3(-24.84, 1.9, -4.6), 90, 0.32, {"col": UI.Y, "outline": 6})
 	prop("home/Houseplant_8", Vector3(-17.6, 0, -2.3), 0)
 	# 2 — Брал
@@ -334,10 +341,91 @@ func _intro() -> void:
 	p.anim_lock = "Phone"
 	await say([["phone", "*бзззз* Входящий вызов: ДРУН"], ["drun", "Ч! Ты чё, спишь?! ФОГ ИДЁТ! Туман уже у вашей общаги!"], ["ch", "Друн?.. Какой ещё Фог?"],
 		["drun", "Тот самый. Вали оттуда и дуй ко мне в Мурино, я у шавермы. И осторожно — крысы у вас уже с собаку!"]])
+	# обучение — по желанию; в автоматических прогонах только по запросу (параметр tutor)
+	var learn := false
+	if not G.ui.auto_skip or G.opts.has("tutor"):
+		learn = await G.ui.choose("drun", "Сперва разомнись, а то крысы у вас уже с собаку. Руки-ноги помнят?", ["Разомнусь (обучение, одна минута)", "Помню, погнали"]) == 0
 	p.anim_lock = ""
 	G.cam.end_shot()
 	G.set_flag("d_call")
-	G.toast("%s — ходьба, %s — камера, %s — действие" % (["Стик слева", "палец справа", "кнопка E"] if G.touch else ["WASD", "мышь", "E"]), "")
+	if learn:
+		_tutorial()
+	else:
+		G.toast("%s — ходьба, %s — камера, %s — действие" % (["Стик слева", "палец справа", "кнопка «!»"] if G.touch else ["WASD", "мышь", "E"]), "")
+
+
+# ---------- обучение ----------
+
+func _k(a: String) -> String:
+	return "[b][color=#ffd21f]%s[/color][/b]" % Inp.hint(a)
+
+
+func _tutorial() -> void:
+	var p := G.player
+	_tut = {"yaw": G.cam.yaw, "pitch": G.cam.pitch, "look": 0.0, "pos": p.global_position, "walk": 0.0, "run": 0.0}
+	tutor([
+		{"text": _tt_look, "check": _tc_look},
+		{"text": _tt_move, "check": _tc_move},
+		{"text": func(): return "Беги: %s. Бег тратит зелёную полоску" % ("тяни стик [b][color=#ffd21f]до упора[/color][/b]" if G.touch else "держи " + _k("sprint")), "check": _tc_run},
+		{"text": func(): return "Прыгни: " + _k("jump"), "check": func(_dt: float): return not G.player.is_on_floor() and G.player.velocity.y > 1.0},
+		{"text": func(): return "Перекат: %s. В перекате тебя не задеть" % _k("dodge"), "check": func(_dt: float): return G.player.state == "roll"},
+		{"text": func(): return "Разбей ящик серией: %s три раза подряд" % _k("attack"), "enter": _tut_crate, "check": func(_dt: float): return not is_instance_valid(tut_crate) or tut_crate.dead},
+		{"text": _tt_throw, "check": func(_dt: float): return G.player.state == "throw"},
+		{"text": func(): return "Открой дверь: подойди к ней и нажми %s.\nЖёлтый значок показывает всё, с чем можно что-то сделать" % _k("interact"), "check": func(_dt: float): return room_door.is_open},
+	])
+	var tree := get_tree()
+	while tutor_on:
+		await tree.physics_frame
+		if not is_inside_tree():
+			return
+	G.set_flag("d_tutor")
+	G.toast("Размялся. Пауза — %s: там «Управление» и настройки" % Inp.hint("pause"), "")
+
+
+func _tt_look() -> String:
+	if G.touch:
+		return "Осмотрись: веди пальцем по [b][color=#ffd21f]правой половине экрана[/color][/b]"
+	if Inp.last_device == "pad":
+		return "Осмотрись: [b][color=#ffd21f]правый стик[/color][/b]"
+	return "Осмотрись: двигай [b][color=#ffd21f]мышью[/color][/b] или жми [b][color=#ffd21f]стрелки[/color][/b]" + ("\n[font_size=16]мышь не слушается — щёлкни по игре[/font_size]" if G.web else "")
+
+
+func _tc_look(_dt: float) -> bool:
+	_tut["look"] = float(_tut["look"]) + absf(wrapf(G.cam.yaw - float(_tut["yaw"]), -PI, PI)) + absf(G.cam.pitch - float(_tut["pitch"]))
+	_tut["yaw"] = G.cam.yaw
+	_tut["pitch"] = G.cam.pitch
+	return float(_tut["look"]) > 1.4
+
+
+func _tt_move() -> String:
+	if G.touch:
+		return "Иди: [b][color=#ffd21f]стик слева[/color][/b] (коснись левой половины экрана и веди)"
+	if Inp.last_device == "pad":
+		return "Иди: [b][color=#ffd21f]левый стик[/color][/b]"
+	return "Иди: [b][color=#ffd21f]W A S D[/color][/b]"
+
+
+func _tc_move(_dt: float) -> bool:
+	var pp: Vector3 = G.player.global_position
+	_tut["walk"] = float(_tut["walk"]) + minf(0.3, pp.distance_to(_tut["pos"]))
+	_tut["pos"] = pp
+	return float(_tut["walk"]) > 3.5
+
+
+func _tc_run(dt: float) -> bool:
+	if G.player.sprinting:
+		_tut["run"] = float(_tut["run"]) + dt
+	return float(_tut["run"]) > 0.8
+
+
+func _tut_crate() -> void:
+	tut_crate = crate(Vector3(-19.2, 0, -5.6), [["cash", 10]], {"hp": 40.0})
+
+
+func _tt_throw() -> String:
+	if G.money() < 2:
+		return "Подбери деньги из ящика"
+	return "Швырни котлету денег: %s. Котлета летит во врага сама и стоит 2 ₽" % _k("throw")
 
 
 func _refresh_goal() -> void:

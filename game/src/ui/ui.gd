@@ -355,7 +355,9 @@ func say(lines: Array) -> void:
 		if auto_skip:
 			continue
 		_show_line(ln[0], ln[1])
+		Snd.voice(ln[0], String(ln[1]))
 		await advanced
+	Snd.voice_stop()
 	dlg.visible = false
 	G.cut_end()
 
@@ -371,6 +373,7 @@ func choose(who: Variant, text: String, options: Array) -> int:
 		G.cut_end()
 		return clampi(a, 0, options.size() - 1)
 	_show_line(who, text)
+	Snd.voice(who, text)
 	dlg_text.visible_characters = -1
 	dlg_more.text = ""
 	for c in choice_box.get_children():
@@ -390,6 +393,7 @@ func choose(who: Variant, text: String, options: Array) -> int:
 	if first and not G.touch:
 		first.grab_focus.call_deferred()
 	var res: int = await chosen
+	Snd.voice_stop()
 	Snd.sfx("ui", -6.0)
 	_choosing = false
 	choice_box.visible = false
@@ -402,6 +406,9 @@ func choose(who: Variant, text: String, options: Array) -> int:
 func _process(dt: float) -> void:
 	# пока висит заставка главы или босса, подсказки уезжают под неё, а не ложатся поверх
 	var want := 96.0
+	if hud and hud.tutor_box.visible:
+		want = 112.0 + hud.tutor_box.size.y
+		hud.tutor_box.modulate.a = clampf(1.0 - title_box.modulate.a * 1.5, 0.0, 1.0)   # заставка главы важнее
 	if title_box.modulate.a > 0.3 and title_box.get_child_count() > 0:
 		want = 328.0
 	if absf(toasts.offset_top - want) > 0.5:
@@ -415,7 +422,7 @@ func _process(dt: float) -> void:
 		dlg_text.visible_characters = mini(total, int(_typing))
 		if dlg_text.visible_characters >= total:
 			dlg_text.visible_characters = -1
-		elif dlg_text.visible_characters / 4 != before / 4:
+		elif dlg_text.visible_characters / 4 != before / 4 and not Snd.voice_playing():
 			Snd.blip(1.0)
 
 

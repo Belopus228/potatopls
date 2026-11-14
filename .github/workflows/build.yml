@@ -7,6 +7,7 @@ on:
     branches: ['arena/c09c2baf-potatopls', 'main']
     paths: ['game/**', '.github/workflows/build.yml']
   workflow_dispatch:
+  workflow_call:          # так сборку запускает сценарий озвучки после того, как положит записи в ветку
 
 permissions:
   contents: write
@@ -26,6 +27,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}    # голова ветки: в ней может быть свежий коммит с озвучкой
 
       - name: Кэш Godot и шаблонов
         id: cache
@@ -148,8 +151,9 @@ jobs:
           set -uo pipefail
           gh release delete v2-latest --yes --cleanup-tag > /dev/null 2>&1 || true
           sleep 3
-          gh release create v2-latest dist/* --target "$GITHUB_SHA" --prerelease --title "Меллстройность 3D — сборка на Godot (последняя)" \
-            --notes "Автоматическая сборка из ветки \`${GITHUB_REF_NAME}\` ($(echo $GITHUB_SHA | cut -c1-7)). Windows: распаковать и запустить Mellstroynost-3D.exe. Android: установить APK (разрешить установку из неизвестных источников). Linux: распаковать, запустить Mellstroynost-3D.x86_64."
+          SHA=$(git rev-parse HEAD)
+          gh release create v2-latest dist/* --target "$SHA" --prerelease --title "Меллстройность 3D — сборка на Godot (последняя)" \
+            --notes "Автоматическая сборка из ветки \`${GITHUB_REF_NAME}\` ($(echo $SHA | cut -c1-7)). Windows: распаковать и запустить Mellstroynost-3D.exe. Android: установить APK (разрешить установку из неизвестных источников). Linux: распаковать, запустить Mellstroynost-3D.x86_64."
           echo "::notice title=Релиз::https://github.com/${GITHUB_REPOSITORY}/releases/tag/v2-latest"
 
   windows-check:

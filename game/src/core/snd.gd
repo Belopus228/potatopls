@@ -3,6 +3,7 @@ extends Node
 
 const MUSIC_DIR := "res://assets/audio/music/"
 const SFX_DIR := "res://assets/audio/sfx/"
+const VOICE_DIR := "res://assets/audio/voice/"   # озвучка реплик: <ключ>.mp3, ключ — voice_key(кто, текст)
 
 var _mus: Array[AudioStreamPlayer] = []
 var _cur := 0
@@ -14,11 +15,16 @@ var _last := {}                 # имя -> время последнего за
 var music_vol := 0.7
 var sfx_vol := 0.9
 var played := {}                # для тестов: какие звуки запрашивались
+var voice_on := true
+var voice_vol := 1.0
+var _voice: AudioStreamPlayer
+var _duck := 0.0                # насколько приглушена музыка под голос, дБ
+var _voice_n := -1
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	for bus in ["Music", "SFX"]:
+	for bus in ["Music", "SFX", "Voice"]:
 		if AudioServer.get_bus_index(bus) < 0:
 			AudioServer.add_bus()
 			AudioServer.set_bus_name(AudioServer.bus_count - 1, bus)
@@ -34,12 +40,15 @@ func _ready() -> void:
 		p.bus = "SFX"
 		add_child(p)
 		_pool.append(p)
+	_voice = AudioStreamPlayer.new()
+	_voice.bus = "Voice"
+	add_child(_voice)
 
 
 func set_volumes(m: float, s: float) -> void:
 	music_vol = m
 	sfx_vol = s
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), linear_to_db(maxf(m, 0.0001)))
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), linear_to_db(maxf(m, 0.0001)) + _duck)
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Music"), m <= 0.001)
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), linear_to_db(maxf(s, 0.0001)))
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("SFX"), s <= 0.001)
@@ -102,3 +111,65 @@ func sfx(nm: String, vol_db := 0.0, pitch := 1.0, vary := 0.06) -> void:
 ## Короткий «голос» в диалоге: один и тот же звук с разной высотой.
 func blip(pitch := 1.0) -> void:
 	sfx("blip", -8.0, pitch, 0.12)
+
+
+# ---------- озвучка реплик ----------
+
+## Ключ реплики: по нему ищется запись. Тот же расчёт — в tools/voice/extract_lines.py.
+static func voice_key(who: Variant, text: String) -> String:
+	var w := String((who as Dictionary).get("n", "")) if who is Dictionary else String(who)
+	return (w + "|" + text).md5_text().substr(0, 12)
+
+
+## Сколько реплик озвучено (файлов в папке озвучки).
+func voice_count() -> int:
+	if _voice_n < 0:
+		var seen := {}
+		for f in DirAccess.get_files_at(VOICE_DIR):
+			if f.ends_with(".mp3") or f.ends_with(".mp3.import") or f.ends_with(".mp3.remap"):
+				seen[f.get_slice(".", 0)] = true
+		_voice_n = seen.size()
+	return _voice_n
+
+
+func set_voice(on: bool, vol: float) -> void:
+	voice_on = on
+	voice_vol = vol
+	var i := AudioServer.get_bus_index("Voice")
+	AudioServer.set_bus_volume_db(i, linear_to_db(maxf(vol, 0.0001)))
+	AudioServer.set_bus_mute(i, vol <= 0.001)
+	if not on:
+		voice_stop()
+
+
+## Произнести реплику, если она озвучена и озвучка включена. Возвращает длину записи (0 — записи нет).
+func voice(who: Variant, text: String) -> float:
+	voice_stop()
+	if not voice_on:
+		return 0.0
+	var path := VOICE_DIR + voice_key(who, text) + ".mp3"
+	if not ResourceLoader.exists(path):
+		return 0.0
+	var st: AudioStream = load(path)
+	if st == null:
+		return 0.0
+	_voice.stream = st
+	_voice.play()
+	return st.get_length()
+
+
+func voice_stop() -> void:
+	if _voice and _voice.playing:
+		_voice.stop()
+
+
+func voice_playing() -> bool:
+	return _voice != null and _voice.playing
+
+
+func _process(dt: float) -> void:
+	# музыка тише, пока звучит голос
+	var want := -8.0 if voice_playing() else 0.0
+	if absf(_duck - want) > 0.05:
+		_duck = move_toward(_duck, want, dt * 30.0)
+		AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), linear_to_db(maxf(music_vol, 0.0001)) + _duck)

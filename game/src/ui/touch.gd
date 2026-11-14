@@ -9,7 +9,7 @@ const BTN := [
 	["jump", "ПРЫЖОК", Vector2(-230, -70), 46.0],
 	["dodge", "КАТ", Vector2(-60, -235), 44.0],
 	["throw", "₽", Vector2(-175, -215), 40.0],
-	["interact", "E", Vector2(-290, -165), 40.0],
+	["interact", "!", Vector2(-290, -165), 42.0],
 	["gadget", "ПШИК", Vector2(-270, -265), 38.0],
 	["ult", "АМ!", Vector2(-150, -310), 40.0],
 	["item", "ЕДА", Vector2(-380, -70), 36.0],
@@ -49,6 +49,9 @@ func _visible_btn(a: String) -> bool:
 
 
 func _hit_btn(p: Vector2) -> String:
+	var pr: Control = G.ui.hud.prompt
+	if pr.visible and pr.get_global_rect().grow(10.0).has_point(get_global_transform() * p):
+		return "interact"
 	for b in BTN + TOP:
 		if _visible_btn(b[0]) and p.distance_to(_btn_pos(b)) < float(b[3]) + 10.0:
 			return b[0]

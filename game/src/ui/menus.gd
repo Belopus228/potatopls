@@ -63,6 +63,10 @@ static func pause(ui: UI) -> void:
 	G.set_mode("pause")
 	var vb := ui.open_panel("pause", "ПАУЗА", 460)
 	ui.button(vb, "ПРОДОЛЖИТЬ", func(): resume(ui))
+	if G.level and G.level.tutor_on:
+		ui.button(vb, "ПРОПУСТИТЬ ОБУЧЕНИЕ", func():
+			G.level.tutor_skip()
+			resume(ui))
 	ui.button(vb, "С КОНТРОЛЬНОЙ ТОЧКИ", func(): G.retry())
 	ui.button(vb, "НАСТРОЙКИ", func(): settings(ui, func(): pause(ui)))
 	ui.button(vb, "УПРАВЛЕНИЕ", func(): help(ui, func(): pause(ui)))
@@ -130,6 +134,13 @@ static func settings(ui: UI, back: Callable) -> void:
 	_slider(_row(vb, "Звуки"), 0.0, 1.0, float(S["sfx"]), func(v: float):
 		S["sfx"] = v
 		Snd.set_volumes(float(S["music"]), v))
+	var vn := Snd.voice_count()
+	_cycle(ui, _row(vb, "Озвучка реплик" if vn > 0 else "Озвучка (записей пока нет)"), ["Выкл", "Вкл"], 1 if S.get("voice", true) else 0, func(i: int):
+		S["voice"] = i == 1
+		Snd.set_voice(i == 1, float(S.get("voice_vol", 1.0))))
+	_slider(_row(vb, "Громкость голосов"), 0.0, 1.0, float(S.get("voice_vol", 1.0)), func(v: float):
+		S["voice_vol"] = v
+		Snd.set_voice(bool(S.get("voice", true)), v))
 	_cycle(ui, _row(vb, "Инверсия камеры по вертикали"), ["Выкл", "Вкл"], 1 if S["inv_y"] else 0, func(i: int): S["inv_y"] = i == 1)
 	_cycle(ui, _row(vb, "Тряска камеры"), ["Выкл", "Вкл"], 1 if S["shake"] else 0, func(i: int): S["shake"] = i == 1)
 	_cycle(ui, _row(vb, "Сенсорные кнопки"), ["Авто", "Вкл", "Выкл"], {-1: 0, 1: 1, 0: 2}[int(S["touch"])], func(i: int):
@@ -150,13 +161,13 @@ static func settings(ui: UI, back: Callable) -> void:
 static func help(ui: UI, back: Callable) -> void:
 	var vb := ui.open_panel("help", "УПРАВЛЕНИЕ", 720)
 	var rows := [
-		["Ходьба / бег", "WASD или стрелки / Shift", "левый стик / нажать стик", "стик слева / до упора"],
-		["Камера", "мышь, колесо — приближение", "правый стик", "вести пальцем справа"],
+		["Ходьба / бег", "WASD / Shift", "левый стик / нажать стик", "стик слева / до упора"],
+		["Камера", "мышь или стрелки, колесо — приближение", "правый стик", "вести пальцем справа"],
 		["Удар (серия из трёх)", "левая кнопка мыши или J", "X", "УДАР"],
 		["Прыжок", "Пробел", "A", "ПРЫЖОК"],
 		["Перекат", "C или колёсико", "B", "КАТ"],
 		["Бросить котлету денег", "правая кнопка мыши или F", "RB", "₽"],
-		["Действие, разговор", "E", "Y", "E"],
+		["Действие, разговор", "E", "Y", "!"],
 		["Дихлофос (держать)", "Q", "LB", "ПШИК"],
 		["Ульта «АМ-АМ-АМ»", "R", "RT", "АМ!"],
 		["Съесть еду", "1", "крестовина вверх", "ЕДА"],

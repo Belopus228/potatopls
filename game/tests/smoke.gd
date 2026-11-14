@@ -118,6 +118,10 @@ func run(t) -> void:
 		if Snd._stream(Snd.SFX_DIR, x) == null:
 			miss.append("sfx/" + x)
 	t.ok(miss.is_empty(), "музыка и звуки на месте: 10 дорожек, 33 эффекта" if miss.is_empty() else "нет звуков: " + str(miss))
+	# озвучка: ключ реплики считается так же, как в tools/voice/extract_lines.py; без записи реплика просто молчит
+	t.ok(Snd.voice_key("drun", "Ч! Ты чё, спишь?! ФОГ ИДЁТ! Туман уже у вашей общаги!") == "c9c88f705865" and Snd.voice_key({"n": "Сосед"}, "x") == "Сосед|x".md5_text().substr(0, 12),
+		"ключ озвучки совпадает со сборщиком реплик: " + Snd.voice_key("drun", "Ч! Ты чё, спишь?! ФОГ ИДЁТ! Туман уже у вашей общаги!"))
+	t.ok(Snd.voice("drun", "Реплика, которой нет в игре") == 0.0 and not Snd.voice_playing() and Snd.voice_count() >= 0, "реплика без записи идёт без голоса; записей в сборке: %d" % Snd.voice_count())
 	# «Удар с вертухи»: четвёртый удар серии появляется только с купленным предметом
 	var seen_heavy := [false, false]
 	for round in 2:

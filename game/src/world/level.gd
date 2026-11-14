@@ -763,6 +763,50 @@ func door(pos: Vector3, yaw := 0.0, o := {}) -> Door:
 	return d
 
 
+# ---------- обучение ----------
+
+var tutor_on := false
+var tutor_i := -1
+
+## Обучение по шагам. Панель с текущим шагом — в HUD. steps: [{ "text": String | Callable -> String (BBCode),
+## "check": Callable(dt) -> bool, "enter": Callable (необязательно) }]. Шаг засчитан, когда check вернёт true.
+## Не блокирует игру: зовётся без await. Прервать — tutor_skip().
+func tutor(steps: Array, title := "ОБУЧЕНИЕ") -> void:
+	var tree := get_tree()
+	var hud: Hud = G.ui.hud
+	tutor_on = true
+	for i in steps.size():
+		tutor_i = i
+		var st: Dictionary = steps[i]
+		var head := "%s · %d/%d" % [title, i + 1, steps.size()]
+		if st.has("enter"):
+			st["enter"].call()
+		while tutor_on:
+			hud.tutor_show(head, String(st["text"].call()) if st["text"] is Callable else String(st["text"]), float(i) / steps.size())
+			await tree.physics_frame
+			if not is_inside_tree():
+				return
+			if G.mode == "play" and st["check"].call(1.0 / Engine.physics_ticks_per_second):
+				break
+		if not tutor_on:
+			break
+		hud.tutor_show(head, "[color=#7dff8a]Готово![/color]", float(i + 1) / steps.size())
+		hud.tutor_ok()
+		Snd.sfx("coin", -6.0, 1.3)
+		await tree.create_timer(0.55, false).timeout
+		if not is_inside_tree():
+			return
+	tutor_on = false
+	tutor_i = -1
+	hud.tutor_hide()
+
+
+func tutor_skip() -> void:
+	tutor_on = false
+	tutor_i = -1
+	G.ui.hud.tutor_hide()
+
+
 # ---------- сценки ----------
 
 ## Выполнить корутину как сценку: управление блокируется, диалоги идут.

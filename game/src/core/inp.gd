@@ -2,7 +2,9 @@ extends Node
 ## Ввод: действия регистрируются кодом (клавиатура, мышь, геймпад), сенсорный слой пишет сюда стик и поворот камеры.
 
 const KEYS := {
-	"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT], "move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN],
+	"move_left": [KEY_A], "move_right": [KEY_D], "move_up": [KEY_W], "move_down": [KEY_S],
+	# стрелки крутят камеру: в браузере мышь захватывается не всегда, а без камеры играть нельзя
+	"cam_left": [KEY_LEFT], "cam_right": [KEY_RIGHT], "cam_up": [KEY_UP], "cam_down": [KEY_DOWN],
 	"jump": [KEY_SPACE], "sprint": [KEY_SHIFT], "attack": [KEY_J], "throw": [KEY_F, KEY_K], "dodge": [KEY_C, KEY_L],
 	"interact": [KEY_E, KEY_ENTER], "gadget": [KEY_Q], "ult": [KEY_R], "item": [KEY_1], "inv": [KEY_TAB, KEY_I], "pause": [KEY_ESCAPE, KEY_P],
 }
@@ -69,6 +71,9 @@ func move() -> Vector2:
 
 func stick_look() -> Vector2:
 	var v := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
+	var k := Vector2(Input.get_action_strength("cam_right") - Input.get_action_strength("cam_left"), Input.get_action_strength("cam_down") - Input.get_action_strength("cam_up"))
+	if k != Vector2.ZERO:
+		return Vector2(k.x, k.y * 0.6)
 	return v if v.length() > 0.18 else Vector2.ZERO
 
 
@@ -108,7 +113,7 @@ func release_all() -> void:
 ## Подсказка по управлению под текущее устройство.
 func hint(a: String) -> String:
 	if last_device == "touch" or G.touch:
-		return {"attack": "УДАР", "jump": "ПРЫЖОК", "dodge": "ПЕРЕКАТ", "throw": "БРОСОК", "interact": "ДЕЙСТВИЕ", "gadget": "ПШИК", "ult": "АМ!", "item": "ЕДА", "sprint": "стик до упора", "inv": "РЮКЗАК", "pause": "ПАУЗА"}.get(a, a)
+		return {"attack": "УДАР", "jump": "ПРЫЖОК", "dodge": "КАТ", "throw": "₽", "interact": "!", "gadget": "ПШИК", "ult": "АМ!", "item": "ЕДА", "sprint": "стик до упора", "inv": "РЮКЗАК", "pause": "II"}.get(a, a)
 	if last_device == "pad":
 		return {"attack": "X", "jump": "A", "dodge": "B", "throw": "RB", "interact": "Y", "gadget": "LB", "ult": "RT", "item": "крестовина вверх", "sprint": "L3", "inv": "Back", "pause": "Start"}.get(a, a)
 	return {"attack": "ЛКМ", "jump": "Пробел", "dodge": "C", "throw": "ПКМ", "interact": "E", "gadget": "Q", "ult": "R", "item": "1", "sprint": "Shift", "inv": "Tab", "pause": "Esc"}.get(a, a)

@@ -17,7 +17,7 @@ var cam: CamRig
 var ui: UI
 var opts := {}                 # параметры запуска: --lv=murino --cp=roof --god  (в браузере: ?lv=murino&cp=roof&god)
 var save := {}
-var settings := {"q": -1, "sens": 1.0, "inv_y": false, "music": 0.7, "sfx": 0.9, "shake": true, "touch": -1, "fps": false}
+var settings := {"q": -1, "sens": 1.0, "inv_y": false, "music": 0.7, "sfx": 0.9, "shake": true, "touch": -1, "fps": false, "voice": true, "voice_vol": 1.0}
 var in_script := 0
 var touch := false
 var web := false
@@ -109,6 +109,7 @@ func write_settings() -> void:
 
 func apply_settings() -> void:
 	Snd.set_volumes(float(settings["music"]), float(settings["sfx"]))
+	Snd.set_voice(bool(settings.get("voice", true)), float(settings.get("voice_vol", 1.0)))
 	var vp := get_viewport()
 	vp.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X][quality]
 	vp.scaling_3d_scale = [0.7, 0.9, 1.0][quality]
@@ -292,6 +293,7 @@ func go(lv: String, cp := "start") -> void:
 	ui.hud.visible = lv != "menu"
 	ui.hud.set_goal("", null)
 	ui.hud.set_boss(null)
+	ui.hud.tutor_hide()
 	lvl.setup()
 	var c: Array = lvl.cps.get(cp, lvl.cps.get("start", [Vector3.ZERO, 0.0]))
 	player.revive()

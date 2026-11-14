@@ -1,0 +1,79 @@
+# Озвучка реплик через Fish Audio (https://fish.audio).
+#
+# Что нужно сделать один раз:
+#   1. Получить ключ API на fish.audio и добавить его в секреты репозитория под именем FISH_API_KEY:
+#      Settings → Secrets and variables → Actions → New repository secret.
+#   2. Вписать идентификаторы голосов в tools/voice/voices.json и сохранить файл в ветке.
+# Сценарий запускается сам, когда меняется voices.json: озвучивает реплики, которых ещё нет,
+# кладёт записи в game/assets/audio/voice/ и пересобирает игру. Готовые записи повторно не оплачиваются.
+name: Озвучка (Fish Audio)
+
+on:
+  push:
+    branches: ['arena/c09c2baf-potatopls', 'main']
+    paths: ['tools/voice/voices.json']
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Сколько реплик озвучить (0 — все недостающие)'
+        default: '0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: voice-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      changed: ${{ steps.gen.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Озвучить недостающие реплики
+        id: gen
+        env:
+          FISH_API_KEY: ${{ secrets.FISH_API_KEY }}
+          LIMIT: ${{ inputs.limit }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -uo pipefail
+          python3 tools/voice/extract_lines.py | head -1
+          plan=$(python3 tools/voice/fish_tts.py --dry); echo "$plan"
+          if echo "$plan" | grep -q "к озвучке 0 "; then
+            echo "::notice title=Озвучка::Озвучивать нечего: либо всё готово, либо в tools/voice/voices.json не вписаны голоса. $(echo "$plan" | head -1)"
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "${FISH_API_KEY:-}" ]; then
+            echo "::error title=Нет ключа Fish Audio::Добавь секрет репозитория FISH_API_KEY: Settings → Secrets and variables → Actions → New repository secret. Потом ещё раз сохрани tools/voice/voices.json."
+            exit 1
+          fi
+          args=""
+          if [ -n "${LIMIT:-}" ] && [ "${LIMIT:-0}" != "0" ]; then args="--limit $LIMIT"; fi
+          python3 tools/voice/fish_tts.py $args | tee /tmp/voice.log
+          code=${PIPESTATUS[0]}
+          echo "::notice title=Озвучка::$(grep -E 'реплик всего|озвучено|голос не задан|Остановлено' /tmp/voice.log | cut -c1-300 | tr '\n' ' ')"
+          git add -A game/assets/audio/voice tools/voice/lines.json tools/voice/SPEAKERS.md
+          if git diff --cached --quiet; then
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+          else
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "Озвучка: записи реплик (Fish Audio)"
+            git fetch -q origin "$BRANCH" && git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" rebase -q "origin/$BRANCH"
+            git push -q origin "HEAD:$BRANCH"
+            echo "changed=1" >> "$GITHUB_OUTPUT"
+          fi
+          # 0 — всё озвучено; 1 — часть реплик не удалась (записанное всё равно сохранено); остальное — отказ сервиса
+          if [ "$code" != "0" ] && [ "$code" != "1" ]; then exit "$code"; fi
+
+  build:
+    needs: voice
+    if: needs.voice.outputs.changed == '1'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/build.yml

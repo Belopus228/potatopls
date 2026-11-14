@@ -24,6 +24,12 @@ var flash: ColorRect
 var _money_shown := -1
 var _prompt_ok := true
 var fps_lbl: Label
+var marks: Marks
+var tutor_box: PanelContainer
+var tutor_title: Label
+var tutor_text: RichTextLabel
+var tutor_bar: Bar
+var _tutor_tw: Tween
 
 
 class Bar:
@@ -61,6 +67,27 @@ class Bar:
 			var w := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			draw_string_outline(f, Vector2((size.x - w) * 0.5, size.y * 0.76), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.8))
 			draw_string(f, Vector2((size.x - w) * 0.5, size.y * 0.76), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color.WHITE)
+
+
+## Значки над тем, с чем можно взаимодействовать: маленький — «тут что-то есть», большой жёлтый — «жми сейчас».
+class Marks:
+	extends Control
+	var items: Array = []
+
+	func _draw() -> void:
+		var f := UI.font_bold()
+		for it in items:
+			var c: Vector2 = it["pos"]
+			var on: bool = it["on"]
+			var a: float = it["a"]
+			var r := 17.0 if on else 10.0
+			draw_circle(c, r + 3.0, Color(0, 0, 0, 0.5 * a))
+			draw_circle(c, r, Color(1.0, 0.82, 0.12, a) if on else Color(0.1, 0.1, 0.13, 0.85 * a))
+			draw_arc(c, r, 0, TAU, 28, Color(1.0, 0.82, 0.12, a), 2.0, true)
+			var t: String = it["key"]
+			var fs := 20 if on else 12
+			var w := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			draw_string(f, c + Vector2(-w * 0.5, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.07, 0.07, 0.09, a) if on else Color(1, 1, 1, a))
 
 
 func _bar(pos: Vector2, sz: Vector2, col: Color, r := 8) -> Bar:
@@ -146,6 +173,44 @@ func _ready() -> void:
 	marker_lbl.custom_minimum_size = Vector2(80, 0)
 	marker_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	marker.add_child(marker_lbl)
+	# значки над предметами и людьми, с которыми можно взаимодействовать
+	marks = Marks.new()
+	marks.set_anchors_preset(Control.PRESET_FULL_RECT)
+	marks.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(marks)
+	# обучение: текущий шаг
+	tutor_box = PanelContainer.new()
+	tutor_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	tutor_box.position = Vector2(-300, 100)
+	tutor_box.custom_minimum_size = Vector2(600, 0)
+	tutor_box.add_theme_stylebox_override("panel", UI.sb(Color(0.05, 0.05, 0.08, 0.92), 12, UI.Y, 2, 14))
+	tutor_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tv := VBoxContainer.new()
+	tv.add_theme_constant_override("separation", 6)
+	tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tutor_box.add_child(tv)
+	tutor_title = UI.label("", 15, UI.Y, true)
+	tutor_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tv.add_child(tutor_title)
+	tutor_text = RichTextLabel.new()
+	tutor_text.bbcode_enabled = true
+	tutor_text.fit_content = true
+	tutor_text.scroll_active = false
+	tutor_text.custom_minimum_size = Vector2(570, 0)
+	tutor_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tutor_text.add_theme_font_override("normal_font", UI.font_text())
+	tutor_text.add_theme_font_override("bold_font", UI.font_bold())
+	tutor_text.add_theme_font_size_override("normal_font_size", 23)
+	tutor_text.add_theme_font_size_override("bold_font_size", 23)
+	tv.add_child(tutor_text)
+	tutor_bar = Bar.new()
+	tutor_bar.custom_minimum_size = Vector2(570, 8)
+	tutor_bar.col = Color(0.35, 0.9, 0.45)
+	tutor_bar.radius = 4
+	tutor_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tv.add_child(tutor_bar)
+	tutor_box.visible = false
+	add_child(tutor_box)
 	# подсказка действия
 	prompt = PanelContainer.new()
 	prompt.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -229,6 +294,29 @@ func set_prompt_visible(v: bool) -> void:
 	_prompt_ok = v
 
 
+## Панель обучения: заголовок («ОБУЧЕНИЕ · 2/8»), текст шага (BBCode), доля пройденного.
+func tutor_show(title: String, bb: String, k: float) -> void:
+	tutor_title.text = title
+	var t := "[center]%s[/center]" % bb
+	if tutor_text.text != t:
+		tutor_text.text = t
+	tutor_bar.set_v(k)
+	tutor_box.visible = true
+
+
+func tutor_hide() -> void:
+	tutor_box.visible = false
+
+
+## Шаг засчитан: зелёная вспышка рамки.
+func tutor_ok() -> void:
+	if _tutor_tw:
+		_tutor_tw.kill()
+	tutor_box.modulate = Color(0.55, 1.0, 0.6)
+	_tutor_tw = create_tween()
+	_tutor_tw.tween_property(tutor_box, "modulate", Color.WHITE, 0.4)
+
+
 func money_pop(n: int) -> void:
 	money_lbl.pivot_offset = Vector2(20, 16)
 	var tw := money_lbl.create_tween()
@@ -241,6 +329,37 @@ func money_pop(n: int) -> void:
 func damage_flash() -> void:
 	flash.color.a = 0.28
 	create_tween().tween_property(flash, "color:a", 0.0, 0.35)
+
+
+## Значки над всем, с чем можно взаимодействовать, в нескольких шагах от героя.
+func _update_marks(p: Player, prompt_on: bool) -> void:
+	var list: Array = []
+	var cam: Camera3D = G.cam.active() if G.cam else null
+	if cam and G.level and G.mode == "play":
+		var key := "!" if G.touch else Inp.hint("interact")
+		var space := p.get_world_3d().direct_space_state
+		var cp := cam.global_position
+		for it in G.level.inter:
+			if it["off"] or (it.has("node") and not is_instance_valid(it["node"])):
+				continue
+			var ip: Vector3 = it["pos"]
+			var d := ip.distance_to(p.global_position + Vector3(0, 0.9, 0))
+			var far: float = maxf(6.5, float(it["r"]) * 2.6)
+			if d > far or cam.is_position_behind(ip):
+				continue
+			if it.has("cond") and not it["cond"].call():
+				continue
+			var on: bool = prompt_on and p.near == it
+			# сквозь стену значок не показываем (кроме того, с чем уже можно работать)
+			if not on and not space.intersect_ray(PhysicsRayQueryParameters3D.create(cp, ip, 1)).is_empty():
+				var hitp: Vector3 = space.intersect_ray(PhysicsRayQueryParameters3D.create(cp, ip, 1))["position"]
+				if hitp.distance_to(ip) > 0.6:
+					continue
+			list.append({"pos": cam.unproject_position(ip + Vector3(0, 0.35 if it.has("node") else 0.0, 0)), "on": on, "a": clampf((far - d) / 1.5, 0.0, 1.0), "key": key})
+	if list.is_empty() and marks.items.is_empty():
+		return
+	marks.items = list
+	marks.queue_redraw()
 
 
 func _process(_dt: float) -> void:
@@ -269,6 +388,7 @@ func _process(_dt: float) -> void:
 	if show_prompt:
 		var lab := String(p.near["label"])
 		prompt_lbl.text = lab if G.touch else "[%s]  %s" % [Inp.hint("interact"), lab]
+	_update_marks(p, show_prompt)
 	# босс
 	if boss != null:
 		if not is_instance_valid(boss) or boss.dead:
