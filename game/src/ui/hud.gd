@@ -75,7 +75,9 @@ func _bar(pos: Vector2, sz: Vector2, col: Color, r := 8) -> Bar:
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# именно «…and_offsets»: узел уже в дереве, и set_anchors_preset оставил бы ему прежний нулевой размер —
+	# тогда всё, что привязано к правому и нижнему краю (цель, подсказки, полоса босса, сенсорные кнопки), уезжает за экран
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# портрет
 	var pf := Panel.new()
@@ -110,7 +112,6 @@ func _ready() -> void:
 	goal_box.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	goal_box.custom_minimum_size = Vector2(360, 0)
 	goal_box.position = Vector2(-382, 18)
-	goal_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	var gsb := UI.sb(Color(0.05, 0.05, 0.08, 0.84), 8, UI.Y, 0, 12)
 	gsb.border_width_left = 5
 	gsb.border_color = UI.Y

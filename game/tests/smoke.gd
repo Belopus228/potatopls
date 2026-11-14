@@ -38,6 +38,70 @@ func run(t) -> void:
 	G.player.face(Vector3(3, 0, 2))
 	await t.sim(0.3)
 	t.ok(G.player.near != null and String(G.player.near["label"]) == "Поговорить", "рядом NPC: %s" % (str(G.player.near["label"]) if G.player.near != null else "нет"))
+	# интерфейс на экране. Панели, привязанные к правому и нижнему краю, раньше уезжали за экран:
+	# у HUD и сенсорного слоя был нулевой размер, и не было видно ни цели, ни подсказки, ни кнопок на телефоне
+	var vr: Rect2 = G.ui.root.get_global_rect()
+	var hud = G.ui.hud
+	t.ok(vr.size.x > 600.0 and hud.size == vr.size and G.ui.touch_pad.size == vr.size, "HUD и сенсорный слой во весь экран: %s / %s / %s" % [str(vr.size), str(hud.size), str(G.ui.touch_pad.size)])
+	t.ok(hud.prompt.visible and vr.encloses(hud.prompt.get_global_rect()), "подсказка действия видна на экране: %s" % str(hud.prompt.get_global_rect()))
+	G.goal("Проверка панели цели")
+	hud.boss_box.visible = true
+	await t.sim(0.1)
+	t.ok(hud.goal_box.visible and vr.encloses(hud.goal_box.get_global_rect()) and hud.goal_box.get_global_rect().end.x > vr.size.x - 40.0, "панель цели на экране, в правом верхнем углу: %s" % str(hud.goal_box.get_global_rect()))
+	t.ok(vr.encloses(hud.boss_box.get_global_rect()) and hud.boss_box.size.x > 300.0, "полоса босса на экране: %s" % str(hud.boss_box.get_global_rect()))
+	t.ok(vr.encloses(hud.hints.get_global_rect()) and hud.hints.text != "", "подсказки по управлению на экране: %s" % str(hud.hints.get_global_rect()))
+	hud.boss_box.visible = false
+	G.goal("")
+	# сенсорные кнопки: все на экране, касание кнопки бьёт, стик ведёт героя
+	var was_touch: bool = G.touch
+	G.touch = true
+	G.ui.apply_settings()
+	await t.sim(0.1)
+	var pad = G.ui.touch_pad
+	var inner := vr.grow(-12.0)
+	var off: Array = []
+	for bt in TouchPad.BTN + TouchPad.TOP:
+		var c: Vector2 = pad._btn_pos(bt)
+		if not (inner.has_point(c - Vector2(bt[3], bt[3])) and inner.has_point(c + Vector2(bt[3], bt[3]))):
+			off.append(bt[0])
+	t.ok(pad.visible and off.is_empty(), "сенсорные кнопки целиком на экране" if off.is_empty() else "кнопки за экраном: " + str(off))
+	# события отдаём слою напрямую: без окна (--headless) Input.parse_input_event до узлов не доходит
+	var tap := InputEventScreenTouch.new()
+	tap.index = 0
+	tap.position = pad._btn_pos(TouchPad.BTN[0])
+	tap.pressed = true
+	pad._input(tap)
+	await t.sim(0.12)
+	var hit_ok: bool = G.player.state == "attack"
+	var up := InputEventScreenTouch.new()
+	up.index = 0
+	up.position = tap.position
+	pad._input(up)
+	await t.sim(0.7)
+	var from: Vector3 = G.player.global_position
+	var st0 := InputEventScreenTouch.new()
+	st0.index = 1
+	st0.position = Vector2(150, vr.size.y - 150)
+	st0.pressed = true
+	pad._input(st0)
+	var dr := InputEventScreenDrag.new()
+	dr.index = 1
+	dr.position = st0.position + Vector2(70, 0)
+	dr.relative = Vector2(70, 0)
+	pad._input(dr)
+	await t.sim(0.6)
+	var moved: float = from.distance_to(G.player.global_position)
+	var st1 := InputEventScreenTouch.new()
+	st1.index = 1
+	st1.position = dr.position
+	pad._input(st1)
+	await t.sim(0.2)
+	t.ok(hit_ok and moved > 0.8 and Inp.touch_move == Vector2.ZERO, "касание кнопки «УДАР» бьёт, стик ведёт героя (%.1f м)" % moved)
+	G.touch = was_touch
+	G.ui.apply_settings()
+	await t.walk(Vector3(3, 0, 3.3), 8.0)
+	G.player.face(Vector3(3, 0, 2))
+	await t.sim(0.3)
 	G.ui.auto_choice = [1]
 	await t.use()
 	await t.flush()

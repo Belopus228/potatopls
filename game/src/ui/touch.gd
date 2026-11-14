@@ -24,7 +24,9 @@ var held := {}                    # палец -> действие
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# именно «…and_offsets»: узел уже в дереве, и set_anchors_preset оставил бы ему прежний нулевой размер —
+	# тогда всё, что привязано к правому и нижнему краю (цель, подсказки, полоса босса, сенсорные кнопки), уезжает за экран
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
