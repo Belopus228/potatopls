@@ -19,3 +19,27 @@ OK Movement Proposition | 5642584
 OK The Complex | 10712421
 OK Controlled Chaos | 14092660
 музыка готова 20:30:33
+flush 20:30:49: 109M
+клон: код 0, 1.1G, 20:31:13
+lfs pull: код 0, 20:31:29
+kenney-impact-sounds: 1.6M, файлов 133
+kenney-rpg-audio: 940K, файлов 54
+kenney-interface-sounds: 1.4M, файлов 103
+kenney-ui-audio: 760K, файлов 54
+kenney-digital-audio: 1.1M, файлов 65
+kenney-sci-fi-sounds: 6.1M, файлов 76
+kenney-foley-sounds: 1.4M, файлов 88
+kenney-casino-audio: 1.1M, файлов 58
+kenney-music-jingles: 1.6M, файлов 88
+kenney-voiceover-pack-fighter: 1.4M, файлов 50
+kenney-retro-sounds-1: 344K, файлов 37
+kenney-retro-sounds-2: 960K, файлов 68
+quaternius-universal-animation-library: 15M, файлов 5
+quaternius-universal-animation-library-2: 17M, файлов 6
+-rw-r--r-- 1 runner runner 7618436 Nov 14 20:31 /tmp/out/jam/quaternius-universal-animation-library/3D/characters/UAL1_Standard.glb
+-rw-r--r-- 1 runner runner 7620504 Nov 14 20:31 /tmp/out/jam/quaternius-universal-animation-library/3D/characters/UAL1_Standard_RM.glb
+-rw-r--r-- 1 runner runner 8095936 Nov 14 20:31 /tmp/out/jam/quaternius-universal-animation-library-2/3D/characters/UAL2_Standard_RM.glb
+-rw-r--r-- 1 runner runner 8091444 Nov 14 20:31 /tmp/out/jam/quaternius-universal-animation-library-2/3D/characters/UAL2_Standard.glb
+-rw-r--r-- 1 runner runner 1442824 Nov 14 20:31 /tmp/out/jam/quaternius-universal-animation-library-2/3D/characters/Mannequin_F.glb
+0
+kenney/quaternius готово 20:31:29
