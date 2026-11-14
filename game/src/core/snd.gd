@@ -192,7 +192,9 @@ static func voice_key(who: Variant, text: String) -> String:
 func voice_count() -> int:
 	if _voice_n < 0:
 		var seen := {}
-		for f in DirAccess.get_files_at(VOICE_DIR):
+		# папки озвучки может не быть в сборке: пока записей нет, она пустая
+		var files: PackedStringArray = DirAccess.get_files_at(VOICE_DIR) if DirAccess.dir_exists_absolute(VOICE_DIR) else PackedStringArray()
+		for f in files:
 			if f.ends_with(".mp3") or f.ends_with(".mp3.import") or f.ends_with(".mp3.remap"):
 				seen[f.get_slice(".", 0)] = true
 		_voice_n = seen.size()
