@@ -63,7 +63,6 @@ func set_mark(ch: String) -> void:
 		mark.outline_size = 16
 		mark.outline_modulate = Color(0, 0, 0, 1)
 		mark.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		mark.no_depth_test = true
 		mark.position.y = height + 0.55
 		add_child(mark)
 	mark.text = ch

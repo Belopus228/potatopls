@@ -112,7 +112,7 @@ def brick():
 def plaster():
     v = 0.95 + fbm(base=6, seed=31) * 0.08 + speck(32, 0.02)
     strokes = noise(N, 64, 33)[:, 0:1] * 0.03
-    save('plaster', shade(col('#f2f0ea'), v + strokes))
+    save('plaster', shade(col('#dcd9d1'), v + strokes))
 
 
 def wallpaper():

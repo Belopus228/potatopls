@@ -367,6 +367,13 @@ func stairs(a: Vector3, b: Vector3, w: float, mat: Variant = "concrete", steps :
 	ramp(a, b, w, mat, 0.3, {"hidden": true})
 
 
+## Потолок: виден только снизу и не мешает камере, которая поднялась над комнатой.
+func ceiling(x0: float, z0: float, x1: float, z1: float, y: float, mat: Variant = "ceiling") -> void:
+	var st := _stool(mat)
+	_quad(st, Vector3(x0, y, z0), Vector3(x1, y, z0), Vector3(x1, y, z1), Vector3(x0, y, z1), Vector3.DOWN, Vector2(absf(x1 - x0), absf(z1 - z0)))
+	_col_box(Transform3D(Basis.IDENTITY, Vector3((x0 + x1) * 0.5, y + 0.15, (z0 + z1) * 0.5)), Vector3(absf(x1 - x0), 0.3, absf(z1 - z0)))
+
+
 ## Цилиндр (колонны, бочки, столбы).
 func cyl(c: Vector3, r: float, h: float, mat: Variant = "concrete", o := {}) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
@@ -461,7 +468,7 @@ static func prop_aabb(key: String) -> AABB:
 func prop(key: String, pos: Vector3, yaw := 0.0, sc: Variant = 1.0, o := {}) -> Node3D:
 	var n: Node3D = prop_scene(key).instantiate()
 	var a := prop_aabb(key)
-	var s: Vector3 = sc if sc is Vector3 else Vector3.ONE * float(sc)
+	var s: Vector3 = sc if sc is Vector3 else Vector3.ONE * float(sc) * Props.base_scale(key)
 	if o.has("h"):
 		s = Vector3.ONE * (float(o["h"]) / maxf(a.size.y, 0.001))
 	elif o.has("w"):
@@ -558,7 +565,11 @@ func board(text: String, pos: Vector3, yaw: float, w: float, h: float, o := {}) 
 	var o2 := o.duplicate()
 	if not o2.has("outline"):
 		o2["outline"] = 0
-	txt(text, pos + b * Vector3(0, 0, 0.05), yaw, minf(h * 0.8 / lines, o.get("th", 9.0)), o2)
+	var longest := 1
+	for ln in text.split("\n"):
+		longest = maxi(longest, ln.length())
+	var th: float = minf(minf(h * 0.8 / lines, o.get("th", 9.0)), w * 0.92 / (longest * 0.68))
+	txt(text, pos + b * Vector3(0, 0, 0.05), yaw, th, o2)
 
 
 ## Источник света (берётся из пула ближайших к игроку). energy ~1..4, range в метрах.

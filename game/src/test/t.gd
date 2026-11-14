@@ -183,6 +183,41 @@ func fight(max_sec := 60.0) -> bool:
 		var dist := d2.length() - tgt.radius
 		var dir := d2.normalized()
 		var loc := dir.rotated(Vector3.UP, -G.cam.yaw)
+		if tgt.boss:
+			var danger: bool = tgt.state in ["charge_w", "charge", "dash_w", "dash", "punch", "vanish", "kick", "tail_w", "slam_w", "slam", "leap", "dive", "spin", "sweep_w", "sweep"]
+			var is_open: bool = tgt.guard >= 0.99
+			var want := 0.0 if is_open else 6.0
+			Inp.release("attack")
+			Inp.release("dodge")
+			Inp.release("jump")
+			if danger and dist < 5.5 and p.state == "move" and p.st > 25.0 and i % 5 == 0:
+				var sl2 := dir.rotated(Vector3.UP, PI * 0.5 * (1.0 if (i / 120) % 2 == 0 else -1.0)).rotated(Vector3.UP, -G.cam.yaw)
+				Inp.touch_move = Vector2(sl2.x, sl2.z)
+				Inp.press("dodge")
+			elif is_open:
+				Inp.touch_move = Vector2(loc.x, loc.z) if dist > 1.2 else Vector2.ZERO
+				Inp.touch_run = dist > 4.0
+				if dist < 2.0 and i % 9 == 0:
+					Inp.press("attack")
+			else:
+				var away := dir.rotated(Vector3.UP, PI * 0.5 + (0.5 if dist < want else -0.5)).rotated(Vector3.UP, -G.cam.yaw)
+				Inp.touch_move = Vector2(away.x, away.z)
+				Inp.touch_run = false
+				if G.money() >= 2 and i % 50 == 0 and dist < 12.0:
+					Inp.press("throw")
+				else:
+					Inp.release("throw")
+			# кольца по земле — перепрыгнуть
+			if tgt.get("ring_on") == true and absf(Vector2(p.global_position.x - tgt.global_position.x, p.global_position.z - tgt.global_position.z).length() - float(tgt.get("ring_r"))) < 2.2 and p.is_on_floor():
+				Inp.press("jump")
+			if p.hp < p.hp_max * 0.45 and p.food_count() > 0 and i % 40 == 0:
+				p.eat()
+			if G.has("am") and p.rage >= 100.0 and dist < 7.0 and is_open:
+				Inp.press("ult")
+			else:
+				Inp.release("ult")
+			await get_tree().physics_frame
+			continue
 		if tgt.state in ["windup", "dash", "leap", "dive"] and dist < 4.0 and p.state == "move" and p.st > 25.0 and i % 4 == 0:
 			var sl := dir.rotated(Vector3.UP, PI * 0.5).rotated(Vector3.UP, -G.cam.yaw)
 			Inp.touch_move = Vector2(sl.x, sl.z)

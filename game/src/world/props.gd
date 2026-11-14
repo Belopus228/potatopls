@@ -10,6 +10,13 @@ const NONE := ["Carpet", "Curtains", "Light_Ceiling", "Light_Chandelier", "Light
 const TRUNK := ["Tree", "Willow", "Streetlight", "TrafficLight", "Sign_Stop", "Sign_NoParking", "Sign_Triangle", "Goal_Flag", "Flag", "Ladder", "Bamboo"]
 
 
+## Наборы сделаны в разном масштабе; домашняя мебель — вдвое крупнее метра.
+static func base_scale(key: String) -> float:
+	if key.begins_with("home/"):
+		return 0.5
+	return 1.0
+
+
 static func col_for(key: String) -> String:
 	var nm := key.get_slice("/", key.get_slice_count("/") - 1)
 	for t in TRUNK:

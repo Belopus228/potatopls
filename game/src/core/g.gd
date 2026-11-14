@@ -240,6 +240,8 @@ func playing() -> bool:
 
 func boot() -> void:
 	apply_settings()
+	if opts.has("skip"):
+		ui.auto_skip = true
 	if opts.has("test"):
 		T.run_test(String(opts["test"]))
 		return
