@@ -228,7 +228,14 @@ func _basement() -> void:
 	txt("ПОДВАЛ", Vector3(19, 1.6, 12.24), 180, 0.5, {"col": Color(1, 0.75, 0.2), "outline": 8})
 	# пол и стены подвала
 	slab(-24.5, 1.5, 23.5, 18.5, -4.0, "concrete_dark", 0.5)
-	slab(-25, 8, 23.6, 18.6, -0.1, "concrete", 0.5)
+	slab(-25, 8, 23.6, 18.6, -0.1, "concrete_dark", 0.5)
+	# потолок одним материалом и плоские балки на нём: ровная плита в свете ламп читалась как закатное небо.
+	# Балки тоньше зазора камеры (0.12), чтобы она в них не въезжала
+	ceiling(-24.5, 1.5, 15, 8.05, -0.6, "concrete_dark")
+	for x in [-20.0, -16.0, -12.0, -8.0, 1.0, 6.5, 12.0]:
+		box(Vector3(x, -0.63, 10), Vector3(0.5, 0.06, 15.8), "black", {"col": false})
+	for z in [6.0, 14.0]:
+		box(Vector3(-4.5, -0.63, z), Vector3(38.6, 0.06, 0.4), "black", {"col": false})
 	wall(-24, 2, 15, 2, -4, 3.4, "brick")
 	wall(-24, 18, 15, 18, -4, 3.4, "brick")
 	wall(-24, 2, -24, 18, -4, 3.4, "brick")
@@ -247,13 +254,13 @@ func _basement() -> void:
 	for p in [Vector3(11, -3.8, 6), Vector3(7, -3.8, 11), Vector3(2, -3.8, 14), Vector3(1, -3.8, 6), Vector3(12, -3.8, 14)]:
 		enemy("rat", p)
 	enemy("rat_big", Vector3(3, -3.8, 10))
-	lamp(Vector3(11, -1.2, 10), Color(1.0, 0.55, 0.25), 2.0, 10.0)
-	lamp(Vector3(3, -1.2, 10), Color(1.0, 0.55, 0.25), 2.0, 10.0)
+	lamp(Vector3(11, -1.7, 10), Color(1.0, 0.6, 0.3), 1.9, 10.0)
+	lamp(Vector3(3, -1.7, 10), Color(1.0, 0.6, 0.3), 1.9, 10.0)
 	txt("ТРОННЫЙ\nЗАЛ", Vector3(-1.84, -1.4, 10), 90, 0.42, {"col": Color(0.5, 0.9, 0.4), "outline": 8})
 	# тронный зал
 	for p in [Vector3(-8, -4, 6.5), Vector3(-18, -4, 6.5), Vector3(-8, -4, 13.5), Vector3(-18, -4, 13.5)]:
 		prop("dung/Column", p, 0, 1.0, {"h": 3.4})
-	for p in [Vector3(-13, -1.1, 4), Vector3(-13, -1.1, 16), Vector3(-21, -1.1, 10), Vector3(-5, -1.1, 10)]:
+	for p in [Vector3(-13, -1.6, 4), Vector3(-13, -1.6, 16), Vector3(-21, -1.6, 10), Vector3(-5, -1.6, 10)]:
 		lamp(p, Color(0.6, 1.0, 0.5), 2.2, 11.0)
 	prop("home/Couch_Large1", Vector3(-22.6, -4, 10), 90)
 	prop("rpg/Gold_Ingots", Vector3(-22.4, -4, 7.6), 30, 1.0, {"h": 0.5})
@@ -296,7 +303,10 @@ func _people() -> void:
 	if G.flag("d_open"):
 		base_door.set_open(true, true)
 	interact(Vector3(18.0, 1.1, 1.2), 2.0, "Кодовый замок", _keypad, {"cond": func(): return not base_door.is_open})
-	box(Vector3(17.95, 1.3, 1.44), Vector3(0.3, 0.4, 0.08), Mats.glow(Color(1.0, 0.75, 0.2), 1.2), {"col": false})
+	box(Vector3(17.95, 1.3, 1.44), Vector3(0.3, 0.42, 0.08), "metal_dark", {"col": false})
+	box(Vector3(17.95, 1.43, 1.39), Vector3(0.22, 0.08, 0.03), Mats.glow(Color(1.0, 0.75, 0.2), 0.9), {"col": false})
+	for i in 6:
+		box(Vector3(17.88 + (i % 3) * 0.07, 1.3 - (i / 3) * 0.09, 1.39), Vector3(0.045, 0.05, 0.03), "plaster", {"col": false})
 	# выход
 	exit_door = door(Vector3(-28, 0, 0), 90, {"w": 1.5, "label": "Выйти на улицу", "mat": "metal_dark", "dir": -1.0,
 		"locked": func(): return "" if G.has("key_dorm") else "Заперто. Ключ комендант унёс в подвал.",

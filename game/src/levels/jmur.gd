@@ -291,7 +291,8 @@ func _lobby() -> void:
 	ceiling(-15, -68.6, 15, -36, 5.5, "plaster_dark")
 	box(Vector3(0, 6.0, -52), Vector3(31, 0.5, 33), "concrete_dark", {"col": false})
 	for p in [Vector3(-7, 5.45, -44), Vector3(7, 5.45, -44), Vector3(-7, 5.45, -60), Vector3(7, 5.45, -60)]:
-		ceil_lamp(p, GREEN, 2.0, 12.0)
+		ceil_lamp(p, Color(0.72, 1.0, 0.85), 2.5, 15.0)
+	lamp(Vector3(0, 3.4, -62.5), Color(0.85, 1.0, 0.9), 2.4, 13.0)   # свет у будки: Консьержа видно от самой двери
 	for i in 12:
 		box(Vector3(-14.6, 1.5, -39.5 - i * 0.9), Vector3(0.3, 0.6, 0.8), "metal_dark", {"col": false})
 	txt("ПОЧТА.\nПИСЕМ НЕТ", Vector3(-14.7, 2.6, -44.5), 90, 0.3, {"col": Color(0.85, 1.0, 0.9), "outline": 6})

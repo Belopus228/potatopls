@@ -9,7 +9,7 @@ const ENVS := {
 	"clean": {"top": Color(0.35, 0.6, 0.9), "hor": Color(0.82, 0.9, 0.96), "gnd": Color(0.6, 0.65, 0.7), "sun": Color(1.0, 1.0, 0.98), "sun_e": 0.62, "rot": Vector3(-55, 30, 0), "amb": 0.34, "fog": Color(0.8, 0.88, 0.95), "fog_d": 0.004, "day": true},
 	"dusk": {"top": Color(0.16, 0.18, 0.38), "hor": Color(0.95, 0.52, 0.32), "gnd": Color(0.2, 0.18, 0.2), "sun": Color(1.0, 0.6, 0.38), "sun_e": 0.9, "rot": Vector3(-14, -60, 0), "amb": 0.45, "fog": Color(0.75, 0.5, 0.45), "fog_d": 0.006, "day": true},
 	"snow": {"top": Color(0.55, 0.62, 0.74), "hor": Color(0.86, 0.88, 0.92), "gnd": Color(0.8, 0.82, 0.86), "sun": Color(1.0, 0.92, 0.84), "sun_e": 0.62, "rot": Vector3(-28, -50, 0), "amb": 0.4, "fog": Color(0.84, 0.87, 0.92), "fog_d": 0.011, "day": true},
-	"night": {"top": Color(0.015, 0.02, 0.06), "hor": Color(0.06, 0.07, 0.16), "gnd": Color(0.02, 0.02, 0.04), "sun": Color(0.5, 0.6, 1.0), "sun_e": 0.28, "rot": Vector3(-55, 40, 0), "amb": 0.55, "fog": Color(0.07, 0.08, 0.17), "fog_d": 0.012, "day": false},
+	"night": {"top": Color(0.015, 0.02, 0.06), "hor": Color(0.06, 0.07, 0.16), "gnd": Color(0.02, 0.02, 0.04), "sun": Color(0.5, 0.6, 1.0), "sun_e": 0.28, "rot": Vector3(-55, 40, 0), "amb": 0.55, "amb_col": Color(0.2, 0.23, 0.4), "fog": Color(0.07, 0.08, 0.17), "fog_d": 0.012, "day": false},
 	"fog": {"top": Color(0.42, 0.45, 0.5), "hor": Color(0.6, 0.62, 0.66), "gnd": Color(0.4, 0.42, 0.45), "sun": Color(0.8, 0.84, 0.95), "sun_e": 0.5, "rot": Vector3(-60, 10, 0), "amb": 0.85, "fog": Color(0.6, 0.62, 0.66), "fog_d": 0.035, "day": true},
 	"grave": {"top": Color(0.03, 0.05, 0.06), "hor": Color(0.13, 0.19, 0.18), "gnd": Color(0.04, 0.05, 0.05), "sun": Color(0.74, 0.9, 0.82), "sun_e": 0.32, "rot": Vector3(-50, -20, 0), "amb": 0.65, "fog": Color(0.11, 0.17, 0.16), "fog_d": 0.026, "day": false},
 	"indoor": {"bg": Color(0.02, 0.02, 0.03), "sun_e": 0.0, "amb_col": Color(0.42, 0.42, 0.5), "amb": 0.75, "fog": Color(0.05, 0.05, 0.07), "fog_d": 0.0, "day": false},
@@ -141,6 +141,10 @@ func set_env(nm: String, o := {}) -> void:
 		env.background_mode = Environment.BG_SKY
 		env.sky = sky
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		if e.has("amb_col"):
+			# ночью от тёмного неба света почти нет, и герой со спины выходил чёрным силуэтом
+			env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+			env.ambient_light_color = e["amb_col"]
 	env.ambient_light_energy = e.get("amb", 0.7)
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_white = 1.0
@@ -156,6 +160,7 @@ func set_env(nm: String, o := {}) -> void:
 	sun.directional_shadow_max_distance = 70.0
 	sun.shadow_bias = 0.06
 	sun.shadow_normal_bias = 1.5
+	sun.directional_shadow_pancake_size = 40.0   # иначе ближний каскад теряет тени от всего, что дальше 20 м к свету
 	apply_quality()
 
 
@@ -186,9 +191,12 @@ func apply_quality() -> void:
 
 # ---------- геометрия ----------
 
-func _stool(mat: Variant) -> SurfaceTool:
+## shadow = false — отдельная пачка без теней: для высоток. Их тень накрывает весь двор, а ближний каскад
+## теней её не видит, и за камерой по земле ползёт резкая граница света.
+func _stool(mat: Variant, shadow := true) -> SurfaceTool:
 	var m := Mats.get_mat(mat)
-	var key := m.get_instance_id()
+	# у материалов (RefCounted) номер экземпляра бывает отрицательным, поэтому знак для пометки не годится
+	var key: Variant = m.get_instance_id() if shadow else "ns%d" % m.get_instance_id()
 	if not _st.has(key):
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -208,6 +216,8 @@ func commit() -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = mesh
 		mi.name = "Batch"
+		if key is String:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
 	_st.clear()
 	_mats.clear()
@@ -245,7 +255,7 @@ func _xf(c: Vector3, o: Dictionary) -> Transform3D:
 func box(c: Vector3, s: Vector3, mat: Variant = "concrete", o := {}) -> CollisionShape3D:
 	var xf := _xf(c, o)
 	if not o.get("hidden", false):
-		_add_box(_stool(mat), xf, s)
+		_add_box(_stool(mat, o.get("shadow", true)), xf, s)
 	if o.get("col", true):
 		return _col_box(xf, s)
 	return null
@@ -418,7 +428,8 @@ func building(c: Vector3, size: Vector3, style := "facade_panel", o := {}) -> vo
 	var xf := _xf(c + Vector3(0, size.y * 0.5, 0), {"yaw": yaw})
 	var night: float = o.get("lit", 0.0 if is_day else 1.6)
 	var m := Mats.uv(style, style + "_e" if night > 0.0 else "", night, o.get("tint", Color.WHITE))
-	var st := _stool(m)
+	var sh: bool = size.y <= 20.0
+	var st := _stool(m, sh)
 	var h := size * 0.5
 	var bay: float = o.get("bay", 12.0)      # метров на плитку текстуры (4 окна × 4 этажа)
 	for f in _FACES:
@@ -432,15 +443,15 @@ func building(c: Vector3, size: Vector3, style := "facade_panel", o := {}) -> vo
 		var cc := n * h
 		var reps := Vector2(maxf(1.0, round(eu.length() * 2.0 / bay * 4.0) / 4.0), maxf(0.25, round(size.y / bay * 4.0) / 4.0))
 		_quad(st, xf * (cc - eu - ev), xf * (cc + eu - ev), xf * (cc + eu + ev), xf * (cc - eu + ev), xf.basis * n, reps)
-	var rt := _stool(o.get("roof", "roof"))
+	var rt := _stool(o.get("roof", "roof"), sh)
 	var top := Vector3(0, h.y, 0)
 	_quad(rt, xf * (top + Vector3(-h.x, 0, h.z)), xf * (top + Vector3(h.x, 0, h.z)), xf * (top + Vector3(h.x, 0, -h.z)), xf * (top + Vector3(-h.x, 0, -h.z)), Vector3.UP, Vector2(size.x, size.z))
 	if o.get("col", true):
 		_col_box(xf, size)
 	if o.get("parapet", true):
 		for sgn in [-1.0, 1.0]:
-			box(c + Vector3(0, size.y + 0.25, 0) + xf.basis * Vector3(0, 0, sgn * (h.z - 0.1)), Vector3(size.x, 0.5, 0.2), "concrete_dark", {"yaw": yaw, "col": false})
-			box(c + Vector3(0, size.y + 0.25, 0) + xf.basis * Vector3(sgn * (h.x - 0.1), 0, 0), Vector3(0.2, 0.5, size.z), "concrete_dark", {"yaw": yaw, "col": false})
+			box(c + Vector3(0, size.y + 0.25, 0) + xf.basis * Vector3(0, 0, sgn * (h.z - 0.1)), Vector3(size.x, 0.5, 0.2), "concrete_dark", {"yaw": yaw, "col": false, "shadow": sh})
+			box(c + Vector3(0, size.y + 0.25, 0) + xf.basis * Vector3(sgn * (h.x - 0.1), 0, 0), Vector3(0.2, 0.5, size.z), "concrete_dark", {"yaw": yaw, "col": false, "shadow": sh})
 
 
 # ---------- модели окружения ----------
