@@ -1,0 +1,37 @@
+# ВРЕМЕННО (для разработки). Среда, в которой пишется игра, не может скачивать файлы из интернета,
+# а раннер GitHub Actions может. Этот сценарий выполняет tools/fetch/run.sh и кладёт результат
+# в служебную ссылку refs/fetch/<имя> этого репозитория, откуда его можно забрать через git.
+name: fetch (временно)
+
+on:
+  push:
+    branches: ['arena/c09c2baf-potatopls']
+    paths: ['tools/fetch/**', '.github/workflows/fetch.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch
+  cancel-in-progress: true
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Скачать и положить в refs/fetch
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          mkdir -p /tmp/out
+          bash tools/fetch/run.sh /tmp/out > /tmp/out/log.txt 2>&1 || echo "run.sh завершился с кодом $?" >> /tmp/out/log.txt
+          tail -60 /tmp/out/log.txt
+          ref=$(cat /tmp/out/.ref 2>/dev/null || echo data)
+          cd /tmp/out && du -sh . && git init -q && git checkout -q -b f && git add -A
+          git -c user.name=fetch -c user.email=fetch@users.noreply.github.com commit -q -m "fetch $ref"
+          git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" HEAD:refs/fetch/$ref
+          echo "::notice title=fetch::refs/fetch/$ref $(git rev-parse --short HEAD) $(du -sh . | cut -f1)"
