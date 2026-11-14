@@ -3,7 +3,7 @@ extends Level
 ## помывочная с душами, санпропускник, проспект Чистоты и Дворец Мойдодыра.
 
 const HALL := Vector3(0, 0, -78)
-const WHITE := Color(0.93, 0.95, 0.97)
+const WHITE := Color(0.62, 0.67, 0.74)
 
 var guard_npc: Npc
 var bath: Npc
@@ -36,29 +36,29 @@ func build() -> void:
 
 
 func _ground() -> void:
-	slab(-80, -135, 80, 95, 0.0, "concrete", 1.0)
+	slab(-80, -135, 80, 95, 0.0, "clean_ground", 1.0)
 	arrival(Vector3(0, 0.9, 74), "МЫТИЩИ", {"col": Color(0.86, 0.9, 0.94)})
 	blocker(Vector3(-60, 4, -20), Vector3(1, 12, 230))
 	blocker(Vector3(60, 4, -20), Vector3(1, 12, 230))
 	var k := 0
 	for z in [60.0, 30.0, 0.0, -30.0, -60.0, -90.0]:
 		for sx in [-1.0, 1.0]:
-			building(Vector3(sx * 71, 0, z), Vector3(20, 22 + (k * 7) % 16, 27), "facade_new", {"tint": Color(1.0, 1.04, 1.1)})
+			building(Vector3(sx * 71, 0, z), Vector3(20, 22 + (k * 7) % 16, 27), "facade_new", {"tint": Color(0.8, 0.85, 0.92)})
 			k += 1
-	building(Vector3(0, 0, -122), Vector3(120, 30, 16), "facade_new", {"tint": Color(1.0, 1.04, 1.1)})
+	building(Vector3(0, 0, -122), Vector3(120, 30, 16), "facade_new", {"tint": Color(0.8, 0.85, 0.92)})
 	txt("ЧИСТОТА — ЗАЛОГ ВСЕГО", Vector3(0, 22, -113.8), 0, 3.0, {"col": Color(0.3, 0.7, 1.0)})
 
 
 func _plaza() -> void:
-	slab(-20, 37, 20, 67, 0.04, "tiles", 0.06, {"col": false})
-	slab(-3, 10, 3, 37, 0.04, "tiles", 0.06, {"col": false})
-	slab(-16, 19, 16, 23, 0.04, "tiles", 0.06, {"col": false})
-	slab(-16, 26.5, 16, 30.5, 0.04, "tiles", 0.06, {"col": false})
+	slab(-20, 37, 20, 67, 0.04, "clean_floor", 0.06, {"col": false})
+	slab(-3, 10, 3, 37, 0.04, "clean_floor", 0.06, {"col": false})
+	slab(-16, 19, 16, 23, 0.04, "clean_floor", 0.06, {"col": false})
+	slab(-16, 26.5, 16, 30.5, 0.04, "clean_floor", 0.06, {"col": false})
 	# фонтан
-	cyl(Vector3(0, 0.35, 52), 4.2, 0.7, "marble", {"seg": 24})
+	cyl(Vector3(0, 0.35, 52), 4.2, 0.7, "marble_soft", {"seg": 24})
 	cyl(Vector3(0, 0.72, 52), 3.8, 0.04, "water", {"col": false, "seg": 24})
-	cyl(Vector3(0, 1.5, 52), 0.5, 3.0, "marble")
-	cyl(Vector3(0, 3.1, 52), 1.0, 0.3, "marble", {"col": false, "r_top": 1.5})
+	cyl(Vector3(0, 1.5, 52), 0.5, 3.0, "marble_soft")
+	cyl(Vector3(0, 3.1, 52), 1.0, 0.3, "marble_soft", {"col": false, "r_top": 1.5})
 	if not G.flag("my_fountain"):
 		jet = mesh_box(Vector3(0.6, 3.6, 0.6), Color(0.6, 0.85, 1.0, 0.6))
 		jet.position = Vector3(0, 5.0, 52)
@@ -73,31 +73,31 @@ func _plaza() -> void:
 			G.set_flag("my_s3")
 			_goal()})
 	for a in [[Vector3(-9, 0, 44), 0.0], [Vector3(9, 0, 44), 0.0], [Vector3(-9, 0, 60), 180.0], [Vector3(9, 0, 60), 180.0]]:
-		bench(a[0], a[1], "white")
+		bench(a[0], a[1], "clean_white")
 	for sx in [-6.5, 6.5]:
-		cyl(Vector3(sx, 2.6, 37.4), 0.14, 5.2, "white")
+		cyl(Vector3(sx, 2.6, 37.4), 0.14, 5.2, "clean_white")
 	board("МЫТИЩИ — ГОРОД ЧИСТЫХ РУК", Vector3(0, 4.9, 37.34), 180, 13.4, 1.0, {"col": Color(0.2, 0.6, 1.0), "bg": WHITE})
 	board("МЫТИЩИ — ГОРОД ЧИСТЫХ РУК", Vector3(0, 4.9, 37.46), 0, 13.4, 1.0, {"col": Color(0.2, 0.6, 1.0), "bg": WHITE})
-	board("МОЙ РУКИ ПЕРЕД ЕДОЙ,\nПОСЛЕ ЕДЫ И ВМЕСТО ЕДЫ", Vector3(-13, 2.2, 66.4), 180, 5.2, 1.3, {"col": Color(0.15, 0.4, 0.8), "bg": WHITE})
-	board("ГРЯЗЬ НЕ ПРОЙДЁТ.\nИ ТЫ НЕ ПРОЙДЁШЬ", Vector3(13, 2.2, 66.4), 180, 5.2, 1.3, {"col": Color(0.15, 0.4, 0.8), "bg": WHITE})
+	board("МОЙ РУКИ ПЕРЕД ЕДОЙ,\nПОСЛЕ ЕДЫ И ВМЕСТО ЕДЫ", Vector3(-12, 2.2, 63.0), 0, 5.2, 1.3, {"col": Color(0.15, 0.4, 0.8), "bg": WHITE})
+	board("ГРЯЗЬ НЕ ПРОЙДЁТ.\nИ ТЫ НЕ ПРОЙДЁШЬ", Vector3(12, 2.2, 63.0), 0, 5.2, 1.3, {"col": Color(0.15, 0.4, 0.8), "bg": WHITE})
 	for p in [Vector3(-17, 0, 40), Vector3(17, 0, 40), Vector3(-17, 0, 64), Vector3(17, 0, 64)]:
-		cyl(p + Vector3(0, 0.5, 0), 0.9, 1.0, "marble", {"seg": 10})
+		cyl(p + Vector3(0, 0.5, 0), 0.9, 1.0, "marble_soft", {"seg": 10})
 		prop("nature/Bush_1", p + Vector3(0, 1.0, 0), 0, 1.0, {"h": 1.3, "col": "none"})
 	for p in [Vector3(-4, 0.3, 44), Vector3(5, 0.3, 58)]:
 		enemy("soap", p)
 
 
 func _laundry() -> void:
-	slab(-46, 44, -22, 62, 0.05, "tiles_blue", 0.1, {"col": false})
-	room(-46, 44, -22, 62, 0, 4.2, "brick_white", {"e": [[53, 3.0, 2.8]]}, 0.3)
-	ceiling(-46, 44, -22, 62, 4.2, "white")
+	slab(-46, 44, -22, 62, 0.05, "clean_tiles", 0.1, {"col": false})
+	room(-46, 44, -22, 62, 0, 4.2, "clean_wall", {"e": [[53, 3.0, 2.8]]}, 0.3)
+	ceiling(-46, 44, -22, 62, 4.2, "clean_white")
 	for x in [-41.0, -34.0, -27.0]:
-		ceil_lamp(Vector3(x, 4.15, 53), Color(0.85, 0.95, 1.0), 2.2, 11.0)
+		ceil_lamp(Vector3(x, 4.15, 53), Color(0.85, 0.95, 1.0), 0.6, 7.0)
 	txt("ПРАЧЕЧНАЯ «БЕЛЫЙ ШУМ»", Vector3(-21.75, 3.5, 53), 90, 0.5, {"col": Color(0.2, 0.55, 0.95)})
 	for i in 8:
 		prop("home/Bathroom_WashingMachine", Vector3(-44.4 + i * 2.7, 0, 45.0), 0, 1.0, {"h": 1.05})
 		prop("home/Bathroom_WashingMachine", Vector3(-44.4 + i * 2.7, 0, 61.0), 180, 1.0, {"h": 1.05})
-	box(Vector3(-36, 0.45, 53), Vector3(7, 0.9, 1.5), "white")
+	box(Vector3(-36, 0.45, 53), Vector3(7, 0.9, 1.5), "clean_white")
 	box(Vector3(-36, 1.0, 53), Vector3(1.2, 0.2, 0.9), Color(0.9, 0.9, 1.0), {"col": false})
 	trigger(Vector3(-34, 1.2, 53), Vector3(10, 2, 8), _laundry_fight, true, func(): return not G.flag("my_l"))
 	if G.flag("my_l") and not G.flag("my_s1"):
@@ -111,7 +111,7 @@ func _soap1() -> void:
 
 
 func _warehouse() -> void:
-	building(Vector3(34, 0, 53), Vector3(20, 7, 18), "facade_new", {"tint": Color(0.9, 0.95, 1.0), "roof": "concrete_dark"})
+	building(Vector3(34, 0, 53), Vector3(20, 7, 18), "facade_new", {"tint": Color(0.74, 0.8, 0.88), "roof": "concrete_dark"})
 	txt("СКЛАД МЫЛА\n(ПУСТОЙ)", Vector3(23.9, 5.4, 46.0), -90, 0.5, {"col": Color(0.2, 0.55, 0.95)})
 	for i in 7:
 		var top := float(i + 1)
@@ -129,13 +129,13 @@ func _warehouse() -> void:
 
 
 func _bath() -> void:
-	slab(-46, 18, -16, 32, 0.05, "tiles_blue", 0.1, {"col": false})
-	room(-46, 18, -16, 32, 0, 4.0, "tiles", {"e": [[21.5, 2.6, 2.6], [28.5, 2.6, 2.6]]}, 0.3)
-	wall(-40, 25, -16, 25, 0, 4.0, "tiles", 0.3)
-	ceiling(-46, 18, -16, 32, 4.0, "white")
+	slab(-46, 18, -16, 32, 0.05, "clean_tiles", 0.1, {"col": false})
+	room(-46, 18, -16, 32, 0, 4.0, "clean_tiles", {"e": [[21.5, 2.6, 2.6], [28.5, 2.6, 2.6]]}, 0.3)
+	wall(-40, 25, -16, 25, 0, 4.0, "clean_tiles", 0.3)
+	ceiling(-46, 18, -16, 32, 4.0, "clean_white")
 	for x in [-42.0, -33.0, -24.0]:
-		ceil_lamp(Vector3(x, 3.95, 21.5), Color(0.85, 0.95, 1.0), 2.0, 9.0)
-		ceil_lamp(Vector3(x, 3.95, 28.5), Color(0.85, 0.95, 1.0), 2.0, 9.0)
+		ceil_lamp(Vector3(x, 3.95, 21.5), Color(0.85, 0.95, 1.0), 0.6, 7.0)
+		ceil_lamp(Vector3(x, 3.95, 28.5), Color(0.85, 0.95, 1.0), 0.6, 7.0)
 	for i in 4:
 		hazard(Vector3(-21.5 - i * 5.0, 1.75, 21.5), Vector3(0.9, 3.5, 6.6), {"phase": i * 0.65, "dmg": 8.0})
 		hazard(Vector3(-36.5 + i * 5.0, 1.75, 28.5), Vector3(0.9, 3.5, 6.6), {"phase": i * 0.65 + 0.4, "dmg": 8.0})
@@ -153,8 +153,8 @@ func _bath() -> void:
 
 
 func _market() -> void:
-	kiosk(Vector3(24, 0, 28.5), -90, "МЫЛЬНЫЙ РЯД", Color(0.3, 0.7, 1.0), "ВСЁ, КРОМЕ МЫЛА", "white")
-	kiosk(Vector3(24, 0, 21), -90, "ШВАБРЫ", Color(0.5, 0.8, 0.9), "УЧЁТ", "white")
+	kiosk(Vector3(24, 0, 28.5), -90, "МЫЛЬНЫЙ РЯД", Color(0.3, 0.7, 1.0), "ВСЁ, КРОМЕ МЫЛА", "clean_white")
+	kiosk(Vector3(24, 0, 21), -90, "ШВАБРЫ", Color(0.5, 0.8, 0.9), "УЧЁТ", "clean_white")
 	for p in [Vector3(30, 0, 32), Vector3(31.4, 0, 31), Vector3(30.6, 1.0, 31.6)]:
 		box(p + Vector3(0, 0.5, 0), Vector3(1.0, 1.0, 1.0), "wood")
 	crate(Vector3(38, 0, 33), [["cash", 12]])
@@ -165,8 +165,8 @@ func _market() -> void:
 
 func _prospect() -> void:
 	# санпропускник
-	wall(-60, 10, -3.2, 10, 0, 5.0, "brick_white", 0.5)
-	wall(3.2, 10, 60, 10, 0, 5.0, "brick_white", 0.5)
+	wall(-60, 10, -3.2, 10, 0, 5.0, "clean_wall", 0.5)
+	wall(3.2, 10, 60, 10, 0, 5.0, "clean_wall", 0.5)
 	box(Vector3(0, 5.5, 10), Vector3(7.4, 1.0, 0.7), WHITE, {"col": false})
 	txt("САНПРОПУСКНИК", Vector3(0, 5.6, 10.37), 0, 0.5, {"col": Color(0.2, 0.55, 0.95), "outline": 0})
 	txt("ГРЯЗНЫМ ВХОД ВОСПРЕЩЁН", Vector3(0, 5.18, 10.37), 0, 0.22, {"col": Color(0.85, 0.25, 0.2), "outline": 0})
@@ -174,12 +174,12 @@ func _prospect() -> void:
 		gate = barrier(Vector3(0, 2.25, 10), Vector3(6.0, 4.5, 0.3), Color(0.6, 0.9, 1.0, 0.4))
 	trigger(Vector3(0, 1, 6), Vector3(3, 2, 2), func(): G.checkpoint("gate"))
 	# проспект Чистоты
-	slab(-7, -50, 7, 10, 0.04, "tiles", 0.06, {"col": false})
+	slab(-7, -50, 7, 10, 0.04, "clean_floor", 0.06, {"col": false})
 	var k := 0
 	for z in [-2.0, -18.0, -34.0]:
 		for sx in [-1.0, 1.0]:
-			building(Vector3(sx * 22, 0, z), Vector3(16, 13 + (k * 5) % 9, 12), "facade_new", {"tint": Color(1.0, 1.04, 1.1)})
-			box(Vector3(sx * 9.6, 0.5, z + 7.6), Vector3(1.6, 1.0, 1.6), "marble")
+			building(Vector3(sx * 22, 0, z), Vector3(16, 13 + (k * 5) % 9, 12), "facade_new", {"tint": Color(0.8, 0.85, 0.92)})
+			box(Vector3(sx * 9.6, 0.5, z + 7.6), Vector3(1.6, 1.0, 1.6), "marble_soft")
 			box(Vector3(sx * 9.6, 1.4, z + 7.6), Vector3(1.2, 0.7, 0.8), Color(0.98, 0.72, 0.82) if k % 2 == 0 else Color(0.75, 0.9, 1.0), {"col": false, "yaw": 25.0 * sx})
 			box(Vector3(sx * 8.2, 0.45, z), Vector3(0.8, 0.9, 9.0), Color(0.2, 0.5, 0.26))
 			k += 1
@@ -209,20 +209,20 @@ func _prospect() -> void:
 
 
 func _palace() -> void:
-	slab(-24, -106, 24, -50, 0.05, "mosaic", 0.1, {"col": false})
-	wall(-24, -50, -3.6, -50, 0, 9.0, "marble", 0.8)
-	wall(3.6, -50, 24, -50, 0, 9.0, "marble", 0.8)
-	wall(-24, -106, 24, -106, 0, 9.0, "marble", 0.8)
-	wall(-24, -106, -24, -50, 0, 9.0, "marble", 0.8)
-	wall(24, -106, 24, -50, 0, 9.0, "marble", 0.8)
-	box(Vector3(0, 8.2, -50), Vector3(8.0, 1.6, 0.9), "marble", {"col": false})
+	slab(-24, -106, 24, -50, 0.05, "mosaic_soft", 0.1, {"col": false})
+	wall(-24, -50, -3.6, -50, 0, 9.0, "marble_soft", 0.8)
+	wall(3.6, -50, 24, -50, 0, 9.0, "marble_soft", 0.8)
+	wall(-24, -106, 24, -106, 0, 9.0, "marble_soft", 0.8)
+	wall(-24, -106, -24, -50, 0, 9.0, "marble_soft", 0.8)
+	wall(24, -106, 24, -50, 0, 9.0, "marble_soft", 0.8)
+	box(Vector3(0, 8.2, -50), Vector3(8.0, 1.6, 0.9), "marble_soft", {"col": false})
 	txt("ДВОРЕЦ ЧИСТОТЫ", Vector3(0, 8.2, -49.5), 0, 0.9, {"col": Color(0.2, 0.55, 0.95), "outline": 0})
 	for z in [-60.0, -72.0, -84.0, -96.0]:
 		for sx in [-13.0, 13.0]:
-			cyl(Vector3(sx, 4.5, z), 0.9, 9.0, "marble", {"seg": 12})
-			cyl(Vector3(sx, 9.1, z), 1.2, 0.3, "marble", {"col": false, "seg": 12})
+			cyl(Vector3(sx, 4.5, z), 0.9, 9.0, "marble_soft", {"seg": 12})
+			cyl(Vector3(sx, 9.1, z), 1.2, 0.3, "marble_soft", {"col": false, "seg": 12})
 	# трон-умывальник
-	box(Vector3(0, 0.8, -102.5), Vector3(8.0, 1.6, 3.0), "marble")
+	box(Vector3(0, 0.8, -102.5), Vector3(8.0, 1.6, 3.0), "marble_soft")
 	box(Vector3(0, 1.62, -102.3), Vector3(6.8, 0.06, 2.0), "water", {"col": false})
 	box(Vector3(0, 4.6, -105.3), Vector3(6.0, 5.0, 0.2), Color(0.75, 0.88, 0.95), {"col": false})
 	cyl(Vector3(0, 2.6, -104.4), 0.2, 2.0, "gold", {"col": false})

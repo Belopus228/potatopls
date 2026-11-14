@@ -11,7 +11,7 @@ var dir := Vector3.ZERO
 
 func _init() -> void:
 	var m := Model.creature("rat", 2.2, {"Grey": Color("4a3a30"), "Pink": Color("d08a80")})
-	init_boss("Крысиный Король", 600.0, m, 1.1, 2.0)
+	init_boss("Крысиный Король", 520.0, m, 1.1, 2.0)
 	var at := m.attach("Head")
 	var cr: Node3D = Level.prop_scene("rpg/Crown").instantiate()
 	var a := Level.prop_aabb("rpg/Crown")
@@ -70,7 +70,7 @@ func _ai(dt: float) -> void:
 		"charge":
 			velocity.x = dir.x * 15.5
 			velocity.z = dir.z * 15.5
-			if not hit_once and blast(global_position + dir * 1.3, 1.9, 22.0, 12.0, 2.2):
+			if not hit_once and blast(global_position + dir * 1.3, 1.9, 18.0, 12.0, 2.2):
 				hit_once = true
 			if st > 0.15 and is_on_wall():
 				G.cam.shake(0.7)
@@ -99,7 +99,7 @@ func _ai(dt: float) -> void:
 			_stop(dt)
 			play("idle", 0.1)
 			if st >= 0.7:
-				blast(global_position, 4.6, 16.0, 11.0)
+				blast(global_position, 4.6, 14.0, 11.0)
 				Fx.ring(get_parent(), global_position + Vector3(0, 0.2, 0), Color(0.9, 0.6, 0.4), 4.8, 0.3)
 				Snd.sfx("swing", 0.0, 0.6)
 				yaw += TAU * 0.999

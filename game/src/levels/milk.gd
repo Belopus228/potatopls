@@ -54,12 +54,13 @@ func _ground() -> void:
 		box(Vector3(20, 0.08, 53.2 + dz), Vector3(86, 0.1, 0.14), "metal_dark", {"col": false})
 	wagon(Vector3(12, 0.05, 53.2), 9.0, Color(0.78, 0.16, 0.12), true, {"w": 2.4, "h": 2.6, "stripe": Color(0.95, 0.85, 0.5)})
 	txt("ГОТА · 1989", Vector3(12, 1.55, 51.95), 180, 0.34, {"col": Color(0.98, 0.9, 0.6), "outline": 6})
+	txt("ГОТА · 1989", Vector3(12, 1.55, 54.45), 0, 0.34, {"col": Color(0.98, 0.9, 0.6), "outline": 6})
 	for x in [-18.0, 2.0, 30.0, 50.0]:
 		cyl(Vector3(x, 3.0, 55.4), 0.1, 6.0, "wood_dark")
 		box(Vector3(x, 5.6, 54.4), Vector3(0.08, 0.08, 2.2), "metal_dark", {"col": false})
 	box(Vector3(16, 5.5, 53.2), Vector3(80, 0.04, 0.04), "black", {"col": false})
 	cyl(Vector3(4.6, 1.3, 50.2), 0.06, 2.6, "metal_dark")
-	board("ТРАМВАЙ «ГОТА»\nСЕЛО — ПАУЧЬЯ ЯМА", Vector3(4.6, 2.5, 50.2), 180, 2.6, 0.8, {"col": Color(1.0, 0.9, 0.4)})
+	board("ТРАМВАЙ «ГОТА»\nСЕЛО — ПАУЧЬЯ ЯМА", Vector3(4.6, 2.5, 50.2), 0, 2.6, 0.8, {"col": Color(1.0, 0.9, 0.4)})
 
 
 func _village() -> void:

@@ -9,7 +9,7 @@ func run(t) -> void:
 		"dark": ["murino", "roof", Vector3(0, 90.1, 70.5), {"spray": 1, "am": 1, "chain": 1, "doshik": 2, "shawa": 1}],
 		"mother": ["milk", "pit", Vector3.ZERO, {"spray": 1, "am": 1, "kicks": 1, "chain": 1, "tasty": 1, "doshik": 2, "milk": 2}],
 		"moidodyr": ["myt", "palace", Vector3.ZERO, {"spray": 1, "am": 1, "kicks": 1, "chain": 2, "tasty": 1, "doshik": 2, "milk": 2}],
-		"bannik": ["banya", "lake", Vector3.ZERO, {"spray": 1, "am": 1, "kicks": 1, "chain": 2, "tasty": 2, "doshik": 2, "kvass": 1}],
+		"bannik": ["banya", "bath", Vector3.ZERO, {"spray": 1, "am": 1, "kicks": 1, "chain": 2, "tasty": 2, "doshik": 2, "kvass": 1}],
 		"concierge": ["jmur", "boss", Vector3.ZERO, {"spray": 1, "am": 1, "kicks": 1, "chain": 3, "tasty": 2, "doshik": 2, "kvass": 1}],
 		"fog": ["final", "start", Vector3.ZERO, {"spray": 1, "am": 1, "kicks": 1, "chain": 3, "tasty": 3, "doshik": 2, "kvass": 2}],
 	}

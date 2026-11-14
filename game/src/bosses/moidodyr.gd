@@ -13,7 +13,7 @@ var summoned := 0
 
 func _init() -> void:
 	var m := Model.creature("mech", 3.6, {})
-	init_boss("Мойдодыр", 780.0, m, 1.15, 3.4)
+	init_boss("Мойдодыр", 860.0, m, 1.15, 3.4)
 	base_guard = 0.3
 	guard = 0.3
 	arena_r = 21.0
@@ -64,7 +64,7 @@ func _ai(dt: float) -> void:
 			face(p.global_position)
 			if st >= 0.45:
 				play("Shoot", 0.05, 1.5, true)
-				shoot("bubble", 7.5 if phase == 1 else 9.0, 9.0, 1, 0.0, {"home": 0.7})
+				shoot("bubble", 8.5 if phase == 1 else 10.0, 9.0, 1, 0.0, {"home": 0.8})
 				Snd.sfx("shoot", -5.0, 1.5)
 				shots_left -= 1
 				if shots_left > 0:
@@ -117,7 +117,7 @@ func _ai(dt: float) -> void:
 				var lead := Vector3(p.velocity.x, 0, p.velocity.z) * 0.5
 				var at := clamp_arena(p.global_position + lead + Vector3(randf_range(-1.6, 1.6), 0, randf_range(-1.6, 1.6)), 0.5)
 				at.y = global_position.y
-				drop(at, 2.3, 0.95, 14.0, Color(0.6, 0.85, 1.0))
+				drop(at, 2.3, 0.85, 14.0, Color(0.6, 0.85, 1.0))
 			if rain_left <= 0 and st > 0.6 and drops.is_empty():
 				set_state("hot")
 				open(3.0 if phase == 1 else 2.6, "БОЙЛЕР ПЕРЕГРЕЛСЯ! БЕЙ!")
