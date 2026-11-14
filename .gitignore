@@ -3,3 +3,10 @@ image-search/
 .DS_Store
 *.log
 docs/dev.html
+# Godot
+game/.godot/
+game/android/
+game/build/
+*.translation
+*.tmp
+__pycache__/
