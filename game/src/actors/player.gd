@@ -44,6 +44,7 @@ var ult_wave := 0
 var sprinting := false
 var chain_node: Node3D
 var can_node: Node3D
+var trail: Array = []           # след: недавние точки на земле; по нему существа находят дорогу через двери
 var _was_floor := true
 var _spray_fx: CPUParticles3D
 
@@ -77,6 +78,7 @@ func place(pos: Vector3, y := 0.0) -> void:
 	velocity = Vector3.ZERO
 	set_yaw(y)
 	safe_pos = pos
+	trail.clear()
 	reset_physics_interpolation()
 
 
@@ -163,6 +165,10 @@ func _physics_process(dt: float) -> void:
 		Snd.sfx("land", -6.0)
 		Fx.dust(get_parent(), global_position)
 	_was_floor = now_floor
+	if now_floor and (trail.is_empty() or (trail[-1] as Vector3).distance_to(global_position) > 0.7):
+		trail.append(global_position)
+		if trail.size() > 60:
+			trail.pop_front()
 
 	# выносливость и заряды
 	st_delay = maxf(0.0, st_delay - dt)

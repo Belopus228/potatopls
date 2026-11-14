@@ -30,8 +30,5 @@ jobs:
           mkdir -p /tmp/out
           bash tools/fetch/run.sh /tmp/out > /tmp/out/log.txt 2>&1 || echo "run.sh завершился с кодом $?" >> /tmp/out/log.txt
           tail -60 /tmp/out/log.txt
-          ref=$(cat /tmp/out/.ref 2>/dev/null || echo data)
-          cd /tmp/out && du -sh . && git init -q && git checkout -q -b f && git add -A
-          git -c user.name=fetch -c user.email=fetch@users.noreply.github.com commit -q -m "fetch $ref"
-          git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" HEAD:refs/fetch/$ref
-          echo "::notice title=fetch::refs/fetch/$ref $(git rev-parse --short HEAD) $(du -sh . | cut -f1)"
+          bash tools/fetch/flush.sh /tmp/out
+          echo "::notice title=fetch::refs/fetch/$(cat /tmp/out/.ref) $(du -sh --exclude=.git /tmp/out | cut -f1)"

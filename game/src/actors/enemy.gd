@@ -26,8 +26,17 @@ var wander_to := Vector3.ZERO
 var on_death: Callable
 var leash := 30.0
 var title := ""
+var len_f := 0.0                # насколько модель выступает вперёд и назад от центра (длинные: крысы, волки)
+var len_b := 0.0
 var _dead_t := 0.0
 var _stars: Label3D
+var _los := false               # видит ли игрока (проверка лучом раз в ~0,15 с)
+var _los_t := 0.0
+var _lost_t := 0.0              # сколько секунд игрока не видно
+var _crumb := Vector3.ZERO      # куда бежим, пока игрока не видно: точка его следа
+var _crumb_t := 0.0
+var _fit := 0.0                 # сдвиг модели вдоль тела, чтобы морда и хвост не торчали сквозь стену
+var _ret_t := 0.0
 
 static var _white: ImageTexture
 
@@ -45,6 +54,10 @@ func init(k: String, o := {}) -> void:
 	if model:
 		add_child(model)
 		model.play("idle", 0.0)
+		if def.has("model"):
+			var b := model.bounds()
+			len_f = maxf(0.0, -b.position.z)
+			len_b = maxf(0.0, b.end.z)
 	collision_layer = 4
 	collision_mask = 1
 	make_capsule(def.get("r", 0.45), def.get("h", 1.0))
@@ -159,8 +172,78 @@ func _physics_process(dt: float) -> void:
 	move_and_slide()
 	velocity -= kb_v
 	turn_model(dt, 10.0)
+	_fit_walls(dt)
 	if global_position.y < -40.0:
 		die(true)
+
+
+# ---------- зрение и стены ----------
+
+## Видна ли точка от глаз существа: стены, пол и крупная мебель загораживают.
+func sees_point(to: Vector3) -> bool:
+	var space := get_world_3d().direct_space_state
+	var eye := global_position + Vector3(0, maxf(0.45, height * 0.8), 0)
+	if space.intersect_ray(PhysicsRayQueryParameters3D.create(eye, to, 1)).is_empty():
+		return true
+	# второй луч повыше: низкий ящик или стол не должен прятать игрока от крысы
+	var eye2 := global_position + Vector3(0, height + 0.5, 0)
+	return space.intersect_ray(PhysicsRayQueryParameters3D.create(eye2, to + Vector3(0, 0.5, 0), 1)).is_empty()
+
+
+func sees_player(dt := 0.0) -> bool:
+	_los_t -= dt
+	if _los_t <= 0.0:
+		_los_t = 0.13 + randf() * 0.06
+		var p := G.player
+		_los = p != null and sees_point(p.global_position + Vector3(0, 1.1, 0))
+		if bar and hp < hp_max and not dead:
+			bar.visible = _los
+			bar_bg.visible = _los
+	return _los
+
+
+## Куда бежать за игроком. Пока его видно — к нему. Иначе — по его следам: к самой свежей точке следа,
+## которую видно отсюда. Так существо выходит через дверь, а не бьётся в стену, за которой стоит игрок.
+func chase_pos(p: Player, dt: float) -> Vector3:
+	if sees_player(dt):
+		_lost_t = 0.0
+		_crumb = p.global_position
+		return _crumb
+	_lost_t += dt
+	_crumb_t -= dt
+	if _crumb_t <= 0.0:
+		_crumb_t = 0.25
+		if _crumb == Vector3.ZERO:
+			_crumb = global_position
+		for i in range(p.trail.size() - 1, -1, -1):
+			var c: Vector3 = p.trail[i]
+			if absf(c.y - global_position.y) < 3.0 and sees_point(c + Vector3(0, 0.7, 0)):
+				_crumb = c
+				break
+	return _crumb
+
+
+## Длинные существа: если морда (или хвост) упирается в стену, модель сдвигается вдоль тела.
+## Столкновение у существа — узкая капсула, иначе оно не пройдёт в дверь; а тело вдвое длиннее.
+func _fit_walls(dt: float) -> void:
+	if model == null or model.scene == null or len_f <= radius + 0.1 or dead:
+		return
+	var a := model.rotation.y
+	var f := Vector3(-sin(a), 0, -cos(a))
+	var from := global_position + Vector3(0, minf(0.5, maxf(0.25, height * 0.6)), 0)
+	var space := get_world_3d().direct_space_state
+	var want := 0.0
+	var front := len_f + 0.06
+	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + f * front, 1))
+	if not hit.is_empty():
+		want = front - from.distance_to(hit["position"])
+	elif len_b > radius + 0.1:
+		var back := len_b * 0.75
+		hit = space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from - f * back, 1))
+		if not hit.is_empty():
+			want = -(back - from.distance_to(hit["position"]))
+	_fit = lerpf(_fit, want, clampf(14.0 * dt, 0.0, 1.0))
+	model.scene.position.z = _fit
 
 
 func _ai(dt: float) -> void:
@@ -182,13 +265,20 @@ func _ai(dt: float) -> void:
 		hp = minf(hp_max, hp + hp_max * 0.2 * dt)
 		_update_bar()
 		play("walk", 0.2)
+		_ret_t += dt
 		if flat_dist(home) < 1.0:
 			set_state("idle")
-		elif dist < float(def.get("sight", 9)) * 0.7:
+		elif _ret_t > 6.0:
+			home = global_position      # дом за стеной по прямой недостижим — остаёмся тут
+			set_state("idle")
+		elif dist < float(def.get("sight", 9)) * 0.7 and sees_player(dt):
+			aggro = true
 			set_state("chase")
 		return
-	if global_position.distance_to(home) > leash and not boss:
+	if not boss and (global_position.distance_to(home) > leash or _lost_t > 6.0):
 		aggro = false
+		_lost_t = 0.0
+		_ret_t = 0.0
 		set_state("return")
 		return
 	match ai:
@@ -203,8 +293,10 @@ func _ai(dt: float) -> void:
 
 func _idle(dt: float, dist: float, dy: float) -> void:
 	var sight: float = def.get("sight", 9)
-	if dist < sight and absf(dy) < 4.0 and not G.player.dead:
+	if dist < sight and absf(dy) < 4.0 and not G.player.dead and (dist < 1.5 or sees_player(dt)):
 		aggro = true
+		_lost_t = 0.0
+		_crumb = global_position
 		set_state("chase")
 		Snd.sfx("alert", -10.0, 1.0, 0.2)
 		return
@@ -259,7 +351,7 @@ func _hover(dt: float, base_y: float) -> void:
 
 func _strike(p: Player, reach_bonus := 0.5) -> bool:
 	var d := p.global_position - global_position
-	if Vector2(d.x, d.z).length() < float(def.get("reach", 1.4)) + reach_bonus and absf(d.y) < 2.0:
+	if Vector2(d.x, d.z).length() < float(def.get("reach", 1.4)) + reach_bonus and absf(d.y) < 2.0 and (boss or sees_point(p.global_position + Vector3(0, 1.0, 0))):
 		return p.hurt(float(def.get("dmg", 8)), global_position, 6.0)
 	return false
 
@@ -269,9 +361,9 @@ func _ai_melee(dt: float, p: Player, dist: float) -> void:
 	var windup: float = def.get("windup", 0.4)
 	match state:
 		"chase":
-			_go(p.global_position, def.get("speed", 3.5), dt)
+			_go(chase_pos(p, dt), def.get("speed", 3.5), dt)
 			play("run" if float(def.get("speed", 3.5)) > 3.0 else "walk", 0.2)
-			if dist < reach * 0.85 and cd <= 0.0:
+			if dist < reach * 0.85 and cd <= 0.0 and _los:
 				set_state("windup")
 				var l := model.length("attack")
 				play("attack", 0.08, l / maxf(windup * 2.0, 0.2), true)
@@ -294,9 +386,9 @@ func _ai_melee(dt: float, p: Player, dist: float) -> void:
 func _ai_charger(dt: float, p: Player, dist: float) -> void:
 	match state:
 		"chase":
-			_go(p.global_position, def.get("speed", 4.0), dt)
+			_go(chase_pos(p, dt), def.get("speed", 4.0), dt)
 			play("run", 0.2)
-			if dist < 6.5 and cd <= 0.0:
+			if dist < 6.5 and cd <= 0.0 and _los:
 				set_state("windup")
 		"windup":
 			_stop(dt)
@@ -334,17 +426,18 @@ func _ai_charger(dt: float, p: Player, dist: float) -> void:
 func _on_wall_hit() -> void:
 	set_state("recover")
 	st = -0.4
-	G.cam.shake(0.15)
+	if G.player and flat_dist(G.player.global_position) < 8.0:
+		G.cam.shake(0.15)
 
 
 func _ai_leaper(dt: float, p: Player, dist: float) -> void:
 	match state:
 		"chase":
-			_go(p.global_position, def.get("speed", 4.0), dt)
+			_go(chase_pos(p, dt), def.get("speed", 4.0), dt)
 			play("walk", 0.2, 1.3)
-			if dist < 6.5 and dist > 1.5 and cd <= 0.0 and is_on_floor():
+			if dist < 6.5 and dist > 1.5 and cd <= 0.0 and is_on_floor() and _los:
 				set_state("windup")
-			elif dist <= 1.5 and cd <= 0.0:
+			elif dist <= 1.5 and cd <= 0.0 and _los:
 				set_state("bite")
 				play("attack", 0.08, 1.2, true)
 		"bite":
@@ -396,15 +489,16 @@ func _ai_flyer(dt: float, p: Player, dist: float, shooter: bool) -> void:
 				dir.y = 0.0
 				dir = dir.normalized() if dir.length() > 0.1 else Vector3.FORWARD
 				var side := dir.cross(Vector3.UP) * sin(fly_phase * 0.4) * 3.0
-				_go(p.global_position + dir * want + side, def.get("speed", 4.0), dt, false)
+				var tgt := chase_pos(p, dt)
+				_go((p.global_position + dir * want + side) if _los else tgt, def.get("speed", 4.0), dt, false)
 				face(p.global_position)
 				play("idle", 0.2)
-				if cd <= 0.0 and dist < float(def.get("reach", 9.0)) + 2.0:
+				if cd <= 0.0 and dist < float(def.get("reach", 9.0)) + 2.0 and _los:
 					set_state("aim")
 			else:
-				_go(p.global_position, def.get("speed", 4.0), dt)
+				_go(chase_pos(p, dt), def.get("speed", 4.0), dt)
 				play("run", 0.2)
-				if dist < 3.2 and cd <= 0.0:
+				if dist < 3.2 and cd <= 0.0 and _los:
 					set_state("windup")
 					play("attack", 0.1, 1.0, true)
 		"aim":
@@ -449,8 +543,9 @@ func _ai_flyer(dt: float, p: Player, dist: float, shooter: bool) -> void:
 func _ai_shooter(dt: float, p: Player, dist: float) -> void:
 	match state:
 		"chase":
-			if dist > 9.0:
-				_go(p.global_position, def.get("speed", 3.5), dt)
+			var tgt := chase_pos(p, dt)
+			if dist > 9.0 or not _los:
+				_go(tgt, def.get("speed", 3.5), dt)
 				play("walk", 0.2)
 			elif dist < 4.0:
 				_go(global_position + (global_position - p.global_position), def.get("speed", 3.5), dt, false)
@@ -460,7 +555,7 @@ func _ai_shooter(dt: float, p: Player, dist: float) -> void:
 				_stop(dt)
 				face(p.global_position)
 				play("idle", 0.2)
-			if cd <= 0.0 and dist < 12.0:
+			if cd <= 0.0 and dist < 12.0 and _los:
 				set_state("aim")
 				play("shoot", 0.1, 1.0, true)
 		"aim":

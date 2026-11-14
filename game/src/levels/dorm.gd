@@ -18,6 +18,7 @@ var gate: CollisionShape3D
 var bral: Npc
 var vaht: Npc
 var hinted_fight := false
+var digit_pos: Array = []          # где нарисованы цифры кода (для проверки, что их ничто не закрывает)
 
 
 func build() -> void:
@@ -94,11 +95,13 @@ func _shell() -> void:
 
 
 func _digit(n: int, pos: Vector3, yaw: float, col: Color) -> void:
+	digit_pos.append(pos)
 	txt(code[n], pos, yaw, 1.3, {"col": col, "outline": 14})
 	txt("•".repeat(n + 1), pos + Vector3(0, -0.85, 0), yaw, 0.5, {"col": col, "outline": 10})
 
 
-func _bedroom(cx: float, north: bool, variant: int) -> void:
+## win_dx — сдвиг окна вдоль дальней стены: в комнатах с цифрой окно уходит вбок, иначе рама закрывает цифру.
+func _bedroom(cx: float, north: bool, variant: int, win_dx := 0.0) -> void:
 	var s := -1.0 if north else 1.0             # к дальней стене
 	var back := s * 7.6
 	var ry := 0.0 if north else 180.0
@@ -111,8 +114,8 @@ func _bedroom(cx: float, north: bool, variant: int) -> void:
 	prop("home/Chair_1", Vector3(cx + 1.4, 0, s * 6.2), 90)
 	prop("home/Drawer_1", Vector3(cx + 2.9, 0, s * 3.4), -90)
 	prop("home/Carpet_1", Vector3(cx, 0.02, s * 4.6), 90)
-	prop("home/Window_Small1", Vector3(cx, 1.3, back - s * 0.16), ry)
-	box(Vector3(cx, 1.6, back - s * 0.14), Vector3(0.42, 0.55, 0.04), Mats.glow(Color(0.2, 0.3, 0.55), 1.0), {"col": false})
+	prop("home/Window_Small1", Vector3(cx + win_dx, 1.3, back - s * 0.16), ry)
+	box(Vector3(cx + win_dx, 1.6, back - s * 0.14), Vector3(0.42, 0.55, 0.04), Mats.glow(Color(0.2, 0.3, 0.55), 1.0), {"col": false})
 	ceil_lamp(Vector3(cx, 3.0, s * 4.6), Color(1.0, 0.88, 0.66), 1.8, 7.5)
 
 
@@ -124,7 +127,7 @@ func _rooms() -> void:
 	# 2 — Брал
 	_bedroom(-13, true, 1)
 	# 3 — первая цифра
-	_bedroom(-5, true, 1)
+	_bedroom(-5, true, 1, 2.5)
 	_digit(0, Vector3(-5, 1.9, -7.44), 0, Color(1.0, 0.35, 0.3))
 	enemy("rat", Vector3(-6.5, 0.2, -4.5))
 	enemy("rat", Vector3(-3.5, 0.2, -5.5))
@@ -146,7 +149,7 @@ func _rooms() -> void:
 		if not G.has("spray"):
 			G.toast("В ящике с красным крестом — дихлофос. Разбей его!", ""))
 	# 5 — вторая цифра
-	_bedroom(11, true, 0)
+	_bedroom(11, true, 0, 2.5)
 	_digit(1, Vector3(11, 1.9, -7.44), 0, Color(0.45, 0.85, 1.0))
 	crate(Vector3(13.6, 0, -3.0), [["cash", 14]])
 	# 6 — кладовка
@@ -175,10 +178,10 @@ func _rooms() -> void:
 	# качалка — третья цифра
 	prop("home/Carpet_2", Vector3(-5, 0.02, 4.6), 0)
 	prop("home/Stool", Vector3(-7.6, 0, 6.6), 0)
-	box(Vector3(-3.2, 0.3, 6.4), Vector3(2.0, 0.25, 0.6), "metal_dark")
-	cyl(Vector3(-4.3, 0.75, 6.4), 0.38, 0.12, "black", {"col": false}).rotation.z = PI * 0.5
-	cyl(Vector3(-2.1, 0.75, 6.4), 0.38, 0.12, "black", {"col": false}).rotation.z = PI * 0.5
-	box(Vector3(-3.2, 0.75, 6.4), Vector3(2.4, 0.06, 0.06), "metal", {"col": false})
+	box(Vector3(-2.7, 0.3, 5.9), Vector3(2.0, 0.25, 0.6), "metal_dark")
+	cyl(Vector3(-3.8, 0.75, 5.9), 0.38, 0.12, "black", {"col": false}).rotation.z = PI * 0.5
+	cyl(Vector3(-1.6, 0.75, 5.9), 0.38, 0.12, "black", {"col": false}).rotation.z = PI * 0.5
+	box(Vector3(-2.7, 0.75, 5.9), Vector3(2.4, 0.06, 0.06), "metal", {"col": false})
 	_digit(2, Vector3(-5, 1.9, 7.44), 180, Color(0.6, 1.0, 0.6))
 	txt("АМ АМ\nАМ", Vector3(-8.84, 1.9, 4.6), 90, 0.34, {"col": Color(1.0, 0.35, 0.3), "outline": 6})
 	ceil_lamp(Vector3(-5, 3.0, 4.6), Color(1.0, 0.88, 0.66), 1.8, 7.5)

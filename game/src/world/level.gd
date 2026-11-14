@@ -499,6 +499,7 @@ static func tint_node(n: Node, tint: Color) -> void:
 ## tint (умножить цвет: светлые модели на ярком солнце выгорают в белое).
 func prop(key: String, pos: Vector3, yaw := 0.0, sc: Variant = 1.0, o := {}) -> Node3D:
 	var n: Node3D = prop_scene(key).instantiate()
+	n.set_meta("prop", key)
 	if o.has("tint"):
 		tint_node(n, o["tint"])
 	var a := prop_aabb(key)
