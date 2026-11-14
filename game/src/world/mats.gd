@@ -38,6 +38,8 @@ const DEFS := {
 	"grass": {"tex": "grass", "tile": 5.0, "rough": 1.0},
 	"grass_dry": {"tex": "grass", "tile": 5.0, "rough": 1.0, "color": Color(1.1, 0.95, 0.6)},
 	"dirt": {"tex": "dirt", "tile": 4.0, "rough": 1.0},
+	"earth_wall": {"tex": "dirt", "tile": 3.0, "rough": 1.0, "color": Color(0.62, 0.5, 0.42)},
+	"earth_floor": {"tex": "dirt", "tile": 5.0, "rough": 1.0, "color": Color(0.58, 0.47, 0.4)},
 	"sand": {"tex": "dirt", "tile": 4.0, "rough": 1.0, "color": Color(1.5, 1.35, 1.0)},
 	"snow": {"tex": "snow", "tile": 6.0, "rough": 0.85, "color": Color(0.84, 0.87, 0.93)},
 	"clean_ground": {"tex": "concrete", "tile": 4.0, "rough": 0.95, "color": Color(0.48, 0.53, 0.6)},

@@ -242,10 +242,10 @@ func _pit() -> void:
 		if absf(angle_difference(a, PI * 0.5)) < 0.2:
 			continue                                   # вход с юга
 		var c := PIT + Vector3(cos(a) * 18.5, 3.0, sin(a) * 18.5)
-		box(c, Vector3(7.0, 6.0 + rng.randf() * 2.0, 3.0), Color(0.36, 0.3, 0.24), {"yaw": -rad_to_deg(a) + 90.0})
-		prop("nature/Rock_%d" % (1 + rng.randi() % 7), PIT + Vector3(cos(a) * 16.6, 0, sin(a) * 16.6), rng.randf() * 360.0, 1.0, {"h": rng.randf_range(1.2, 2.6), "col": "none"})
+		box(c, Vector3(7.0, 6.0 + rng.randf() * 2.0, 3.0), "earth_wall", {"yaw": -rad_to_deg(a) + 90.0})
+		prop("nature/Rock_%d" % (1 + rng.randi() % 7), PIT + Vector3(cos(a) * 16.6, 0, sin(a) * 16.6), rng.randf() * 360.0, 1.0, {"h": rng.randf_range(1.2, 2.6), "col": "none", "tint": Color(0.5, 0.47, 0.45)})
 	for sx in [-1.0, 1.0]:
-		box(PIT + Vector3(sx * 5.0, 3.0, 23), Vector3(3.0, 6.0, 10.0), Color(0.36, 0.3, 0.24))
+		box(PIT + Vector3(sx * 5.0, 3.0, 23), Vector3(3.0, 6.0, 10.0), "earth_wall")
 	blocker(PIT + Vector3(0, 3, 35.5), Vector3(60, 10, 1))
 	blocker(PIT + Vector3(-12, 3, 30), Vector3(1, 10, 12))
 	blocker(PIT + Vector3(22, 3, 30), Vector3(1, 10, 12))
@@ -255,11 +255,11 @@ func _pit() -> void:
 		var c := PIT + Vector3(cos(a) * 15.2, 0, sin(a) * 15.2)
 		if absf(angle_difference(a, PI * 0.5)) < 0.35:
 			continue
-		cyl(c + Vector3(0, 1.0, 0), 0.6, 2.0, Color(0.93, 0.93, 0.9), {"r_top": 0.25, "seg": 8, "col": false})
+		cyl(c + Vector3(0, 1.0, 0), 0.6, 2.0, Color(0.66, 0.66, 0.6), {"r_top": 0.25, "seg": 8, "col": false})
 	for i in 6:
 		var a := TAU * i / 6.0
 		box(PIT + Vector3(cos(a) * 9.0, 7.5, sin(a) * 9.0), Vector3(19.0, 0.04, 0.08), Color(0.95, 0.95, 0.95, 0.8), {"yaw": -rad_to_deg(a), "col": false})
-	cyl(PIT + Vector3(0, 0.03, 0), 15.5, 0.05, Color(0.3, 0.25, 0.2), {"col": false, "seg": 28})
+	cyl(PIT + Vector3(0, 0.03, 0), 15.5, 0.05, "earth_floor", {"col": false, "seg": 28})
 	txt("ПАУЧЬЯ ЯМА", PIT + Vector3(0, 7.6, 18.2), 0, 1.4, {"col": Color(1.0, 0.4, 0.35), "outline": 12})
 	# трамвай у края ямы
 	for dz in [-0.75, 0.75]:

@@ -22,6 +22,7 @@ const _FACES := [
 
 static var _scn := {}
 static var _aabb := {}
+static var _tinted := {}
 
 var id := ""
 var title := ""
@@ -477,10 +478,29 @@ static func prop_aabb(key: String) -> AABB:
 	return out
 
 
+## Притемнить или подкрасить модель: цвет каждого материала умножается на tint. Копии материалов общие.
+static func tint_node(n: Node, tint: Color) -> void:
+	for c in n.find_children("*", "MeshInstance3D", true, false):
+		var mi := c as MeshInstance3D
+		for i in mi.mesh.get_surface_count():
+			var src := mi.get_active_material(i) as BaseMaterial3D
+			if src == null:
+				continue
+			var k := "%d|%s" % [src.get_instance_id(), tint.to_html()]
+			if not _tinted.has(k):
+				var d: BaseMaterial3D = src.duplicate()
+				d.albedo_color = src.albedo_color * tint
+				_tinted[k] = d
+			mi.set_surface_override_material(i, _tinted[k])
+
+
 ## Модель из assets/props: key вида "home/Bed_Bunk". yaw — градусы; sc — число или Vector3.
-## o: col ("box", "trunk", "none"), r (радиус ствола), parent, h (подогнать высоту в метрах), w (подогнать ширину).
+## o: col ("box", "trunk", "none"), r (радиус ствола), parent, h (подогнать высоту в метрах), w (подогнать ширину),
+## tint (умножить цвет: светлые модели на ярком солнце выгорают в белое).
 func prop(key: String, pos: Vector3, yaw := 0.0, sc: Variant = 1.0, o := {}) -> Node3D:
 	var n: Node3D = prop_scene(key).instantiate()
+	if o.has("tint"):
+		tint_node(n, o["tint"])
 	var a := prop_aabb(key)
 	var s: Vector3 = sc if sc is Vector3 else Vector3.ONE * float(sc) * Props.base_scale(key)
 	if o.has("h"):

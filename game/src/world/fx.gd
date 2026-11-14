@@ -4,6 +4,24 @@ extends RefCounted
 
 static var _quad: QuadMesh
 static var _pmat := {}
+static var _dot_tex: GradientTexture2D
+
+
+## Мягкий кружок для частиц: без него снег, пыль и пар летели белыми квадратами.
+static func _dot() -> Texture2D:
+	if _dot_tex == null:
+		var g := Gradient.new()
+		g.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
+		g.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0.85), Color(1, 1, 1, 0)])
+		var t := GradientTexture2D.new()
+		t.gradient = g
+		t.width = 32
+		t.height = 32
+		t.fill = GradientTexture2D.FILL_RADIAL
+		t.fill_from = Vector2(0.5, 0.5)
+		t.fill_to = Vector2(1.0, 0.5)
+		_dot_tex = t
+	return _dot_tex
 
 
 static func _particle_mesh(col: Color, size := 0.18) -> QuadMesh:
@@ -15,10 +33,10 @@ static func _particle_mesh(col: Color, size := 0.18) -> QuadMesh:
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.albedo_color = col
+	m.albedo_texture = _dot()
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	m.vertex_color_use_as_albedo = true
-	if col.a < 0.99:
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	q.material = m
 	_pmat[key] = q
 	return q
