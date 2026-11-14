@@ -1,1 +1,1 @@
-smoke,dorm,murino,milk,myt
+smoke,dorm,murino,milk,myt,banya,jmur,final

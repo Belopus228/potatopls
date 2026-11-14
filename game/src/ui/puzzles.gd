@@ -191,3 +191,78 @@ static func switches(ui: UI, title: String, hint: String, values: Array, target:
 	G.set_mode("cut")
 	G.cut_end()
 	return bool(st["ok"])
+
+
+## «Напёрстки»: фишка под одним из трёх стаканов, крупье называет перестановки — уследи. Возвращает true, если угадал.
+static func cups(ui: UI, title: String, swaps: int) -> bool:
+	if ui.auto_skip:
+		return true
+	G.cut_begin()
+	G.set_mode("panel")
+	var vb := ui.open_panel("puzzle", title, 480)
+	var info := UI.label("Смотри внимательно…", 22, Color(1, 1, 1, 0.9))
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	info.custom_minimum_size = Vector2(440, 64)
+	vb.add_child(info)
+	var hb := HBoxContainer.new()
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	hb.add_theme_constant_override("separation", 10)
+	vb.add_child(hb)
+	var st := {"pos": randi() % 3, "busy": true, "done": false, "ok": false}
+	var btns: Array[Button] = []
+	var lit := UI.sb(UI.Y, 10, UI.Y, 2, 10)
+	for i in 3:
+		var b := Button.new()
+		b.text = "СТАКАН %d" % (i + 1)
+		b.custom_minimum_size = Vector2(136, 90)
+		b.add_theme_font_size_override("font_size", 20)
+		b.pressed.connect(func():
+			if st["busy"] or st["done"]:
+				return
+			st["done"] = true
+			st["ok"] = int(st["pos"]) == i
+			Snd.sfx("win" if st["ok"] else "deny", -3.0)
+			ui.close_panel())
+		btns.append(b)
+		hb.add_child(b)
+	ui.button(vb, "ОТОЙТИ", func():
+		st["done"] = true
+		ui.close_panel())
+	var run := func():
+		var tree := ui.get_tree()
+		await tree.create_timer(0.6).timeout
+		if st["done"]:
+			return
+		info.text = "Фишка — под стаканом %d." % (int(st["pos"]) + 1)
+		btns[int(st["pos"])].add_theme_stylebox_override("normal", lit)
+		await tree.create_timer(1.3).timeout
+		if st["done"]:
+			return
+		btns[int(st["pos"])].remove_theme_stylebox_override("normal")
+		for k in swaps:
+			var a := randi() % 3
+			var b2 := (a + 1 + randi() % 2) % 3
+			if int(st["pos"]) == a:
+				st["pos"] = b2
+			elif int(st["pos"]) == b2:
+				st["pos"] = a
+			info.text = "Кручу-верчу: меняю %d и %d" % [mini(a, b2) + 1, maxi(a, b2) + 1]
+			Snd.sfx("ui", -4.0, 0.9 + k * 0.05, 0.0)
+			await tree.create_timer(maxf(0.55, 1.05 - k * 0.07)).timeout
+			if st["done"]:
+				return
+			info.text = "…"
+			await tree.create_timer(0.16).timeout
+			if st["done"]:
+				return
+		info.text = "Ну? Где фишка?"
+		st["busy"] = false
+		if is_instance_valid(btns[0]) and not G.touch:
+			btns[0].grab_focus()
+	run.call()
+	await ui.panel_closed
+	st["done"] = true
+	G.set_mode("cut")
+	G.cut_end()
+	return bool(st["ok"])

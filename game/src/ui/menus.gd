@@ -305,3 +305,51 @@ static func shop(ui: UI, title: String, sub: String, goods: Array) -> void:
 		ui.close_panel()
 		G.set_mode("play"))
 	ui.focus_first(vb)
+
+
+## Финальные титры: итоги прохождения. secret — собрана и запасная кнопка «Ж».
+static func ending(ui: UI, secret: bool) -> void:
+	G.set_mode("panel")
+	var vb := ui.open_panel("ending", "ПЕРВЫЙ ЭТАЖ", 620, 0.82)
+	var sub := UI.label("32 августа, 00:00. Туман ушёл. Ч приехал.", 20, Color(1, 1, 1, 0.85))
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(sub)
+	var t := int(G.save.get("time", 0.0))
+	var time_s := "%d:%02d:%02d" % [t / 3600, (t / 60) % 60, t % 60] if t >= 3600 else "%02d:%02d" % [(t / 60) % 60, t % 60]
+	var rows := [["Время", time_s], ["Побеждено пакостей", str(int(G.save.get("kills", 0)))], ["Падений", str(int(G.save.get("deaths", 0)))],
+		["Заработано", "%d ₽" % int(G.save.get("earned", 0))], ["Табло ливта", "1 Э Т А Ж" if secret else "1 Э Т А _"]]
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 40)
+	grid.add_theme_constant_override("v_separation", 6)
+	for r in rows:
+		grid.add_child(UI.label(r[0], 20, Color(1, 1, 1, 0.7)))
+		var v := UI.label(r[1], 22, UI.Y, true)
+		v.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_child(v)
+	var cc := CenterContainer.new()
+	grid.custom_minimum_size = Vector2(460, 0)
+	cc.add_child(grid)
+	vb.add_child(cc)
+	var note := UI.label("Секретная концовка: ливт починен. Навсегда. Ну, до следующего августа." if secret else "В казино «Бурмалда» в Жмурино, говорят, разыгрывают запасную кнопку «Ж»…", 17, Color(1, 1, 1, 0.75))
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.custom_minimum_size = Vector2(560, 0)
+	vb.add_child(note)
+	var cr := UI.label("МЕЛЛСТРОЙНОСТЬ 3D · сделано на Godot 4 · модели и текстуры CC0 (см. CREDITS.md)", 14, Color(1, 1, 1, 0.5))
+	cr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	cr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cr.custom_minimum_size = Vector2(560, 0)
+	vb.add_child(cr)
+	ui.button(vb, "ОСТАТЬСЯ ВО ДВОРЕ", func():
+		ui.close_panel()
+		G.set_mode("play"))
+	ui.button(vb, "В МУРИНО", func():
+		ui.close_panel()
+		G.set_mode("play")
+		G.travel("murino", "lobby"))
+	ui.button(vb, "В ГЛАВНОЕ МЕНЮ", func():
+		ui.close_panel()
+		G.go("menu"))
+	ui.focus_first(vb)
