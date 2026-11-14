@@ -43,3 +43,14 @@ func run(t) -> void:
 	await t.flush()
 	t.ok(G.ui.said.has("Что за бизнес?"), "диалог прошёл (%d реплик)" % G.ui.said.size())
 	t.say(t.state())
+	# звук: каждая дорожка и каждый эффект, которые просит код, должны существовать и грузиться
+	var miss: Array = []
+	for m in ["menu", "dorm", "murino", "milk", "myt", "banya", "jmur", "fog", "boss", "win"]:
+		var st: AudioStream = Snd._stream(Snd.MUSIC_DIR, m)
+		if st == null or st.get_length() < 10.0:
+			miss.append("music/" + m)
+	for x in ["item", "land", "jump", "step", "swing", "hit", "hit_big", "roll", "hurt", "deny", "throw", "spray", "am", "eat", "alert", "dash", "shoot", "die", "coin", "crate",
+			"break", "door", "ui", "blip", "lose", "open", "boss_die", "roar", "crash", "phone", "unlock", "win", "lift"]:
+		if Snd._stream(Snd.SFX_DIR, x) == null:
+			miss.append("sfx/" + x)
+	t.ok(miss.is_empty(), "музыка и звуки на месте: 10 дорожек, 33 эффекта" if miss.is_empty() else "нет звуков: " + str(miss))
