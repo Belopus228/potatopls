@@ -5,9 +5,18 @@ const MUSIC_DIR := "res://assets/audio/music/"
 const SFX_DIR := "res://assets/audio/sfx/"
 const VOICE_DIR := "res://assets/audio/voice/"   # озвучка реплик: <ключ>.mp3, ключ — voice_key(кто, текст)
 
+## дорожки, под которые музыка боя не включается: у них своё настроение
+const NO_FIGHT := ["", "menu", "win", "boss", "boss2"]
+
 var _mus: Array[AudioStreamPlayer] = []
 var _cur := 0
-var cur_music := ""
+var cur_music := ""             # что звучит сейчас
+var base_music := ""            # что попросила игра (музыка места или босса)
+var fight := false              # идёт драка: поверх музыки места звучит музыка боя
+var step_kind := ""             # по чему идём: "", wood, grass, snow, carpet — выбирает звук шага
+var _pos := {}                  # дорожка -> [секунда, когда прервали]: вернёмся на то же место
+var _variants := {}             # имя звука -> сколько у него вариантов (hit_1, hit_2, …)
+var _last_var := {}
 var _pool: Array[AudioStreamPlayer] = []
 var _next := 0
 var _cache := {}
@@ -67,12 +76,35 @@ func _stream(dir: String, nm: String) -> AudioStream:
 	return st
 
 
-## Сменить музыку ("" — тишина).
+## Музыка места или босса ("" — тишина). Если идёт драка, звучит музыка боя, а эта включится после неё.
 func music(nm: String, fade := 1.2) -> void:
+	base_music = nm
+	if nm in NO_FIGHT:
+		fight = false
+	_switch(_want(), fade)
+
+
+## Драка началась или кончилась: музыка места уступает музыке боя и потом возвращается на то же место.
+func set_fight(on: bool) -> void:
+	if fight == on:
+		return
+	fight = on
+	_switch(_want(), 0.7 if on else 1.6)
+
+
+func _want() -> String:
+	if fight and not (base_music in NO_FIGHT) and _stream(MUSIC_DIR, "fight") != null:
+		return "fight"
+	return base_music
+
+
+func _switch(nm: String, fade: float) -> void:
 	if nm == cur_music:
 		return
-	cur_music = nm
 	var old := _mus[_cur]
+	if cur_music != "" and old.playing:
+		_pos[cur_music] = [old.get_playback_position(), Time.get_ticks_msec()]
+	cur_music = nm
 	_cur = 1 - _cur
 	var neu := _mus[_cur]
 	var tw := create_tween().set_parallel(true)
@@ -85,9 +117,15 @@ func music(nm: String, fade := 1.2) -> void:
 		return
 	if st is AudioStreamOggVorbis:
 		(st as AudioStreamOggVorbis).loop = true
+	elif st is AudioStreamMP3:
+		(st as AudioStreamMP3).loop = true
 	neu.stream = st
 	neu.volume_db = -40.0
-	neu.play()
+	# к музыке места возвращаемся туда, где её прервала драка (если прошло не больше двух минут)
+	var from := 0.0
+	if _pos.has(nm) and Time.get_ticks_msec() - int(_pos[nm][1]) < 120000 and nm != "fight":
+		from = fmod(float(_pos[nm][0]), maxf(st.get_length() - 0.5, 1.0))
+	neu.play(from)
 	create_tween().tween_property(neu, "volume_db", 0.0, fade)
 
 
@@ -97,7 +135,7 @@ func sfx(nm: String, vol_db := 0.0, pitch := 1.0, vary := 0.06) -> void:
 	if _last.has(nm) and now - int(_last[nm]) < 45:
 		return
 	_last[nm] = now
-	var st := _stream(SFX_DIR, nm)
+	var st := _pick(nm)
 	if st == null:
 		return
 	var p := _pool[_next]
@@ -106,6 +144,35 @@ func sfx(nm: String, vol_db := 0.0, pitch := 1.0, vary := 0.06) -> void:
 	p.volume_db = vol_db
 	p.pitch_scale = maxf(0.2, pitch + randf_range(-vary, vary))
 	p.play()
+
+
+## Запись для звука: шаг зависит от поверхности, у частых звуков несколько вариантов (hit_1, hit_2, …) — берётся
+## случайный, но не тот же, что в прошлый раз.
+func _pick(nm: String) -> AudioStream:
+	if nm == "step" and step_kind != "" and _stream(SFX_DIR, "step_" + step_kind + "_1") != null:
+		nm = "step_" + step_kind
+	if not _variants.has(nm):
+		var n := 0
+		while _stream(SFX_DIR, "%s_%d" % [nm, n + 1]) != null:
+			n += 1
+		_variants[nm] = n
+	var cnt: int = _variants[nm]
+	if cnt == 0:
+		return _stream(SFX_DIR, nm)
+	var i := randi() % cnt
+	if cnt > 1 and i == int(_last_var.get(nm, -1)):
+		i = (i + 1) % cnt
+	_last_var[nm] = i
+	return _stream(SFX_DIR, "%s_%d" % [nm, i + 1])
+
+
+func has_music(nm: String) -> bool:
+	return _stream(MUSIC_DIR, nm) != null
+
+
+## Есть ли запись для звука (одна или варианты).
+func has_sfx(nm: String) -> bool:
+	return _stream(SFX_DIR, nm) != null or _stream(SFX_DIR, nm + "_1") != null
 
 
 ## Короткий «голос» в диалоге: один и тот же звук с разной высотой.

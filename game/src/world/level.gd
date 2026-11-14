@@ -28,6 +28,9 @@ var id := ""
 var title := ""
 var chapter := ""
 var music := ""
+var steps := ""                 # звук шагов: "" (асфальт, бетон), wood, grass, snow, carpet
+var _fight_t := 0.0             # сколько секунд подряд идёт драка
+var _calm_t := 0.0              # сколько секунд после неё прошло
 var cps := {}
 var kill_y := -25.0
 var is_day := true
@@ -114,6 +117,27 @@ func _physics_process(dt: float) -> void:
 	for f in ticks:
 		f.call(dt)
 	_update_lamps(dt)
+	_update_fight(dt, p)
+
+
+## Музыка боя: включается, когда драка затянулась дольше пары секунд или врагов сразу несколько,
+## и отпускает через несколько секунд после неё. Один шальной враг музыку места не перебивает.
+func _update_fight(dt: float, p: Player) -> void:
+	var n := 0
+	if G.mode == "play" and not p.dead:
+		for e in G.ents:
+			if is_instance_valid(e) and not e.dead and not e.boss and e.aggro and e.active and (e._los or e.flat_dist(p.global_position) < 7.0):
+				n += 1
+	if n > 0:
+		_fight_t += dt
+		_calm_t = 0.0
+		if n >= 2 or _fight_t > 2.0:
+			Snd.set_fight(true)
+	else:
+		_fight_t = 0.0
+		_calm_t += dt
+		if _calm_t > 4.0 or G.mode != "play":
+			Snd.set_fight(false)
 
 
 # ---------- окружение ----------

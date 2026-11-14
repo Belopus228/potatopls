@@ -109,15 +109,27 @@ func run(t) -> void:
 	t.say(t.state())
 	# звук: каждая дорожка и каждый эффект, которые просит код, должны существовать и грузиться
 	var miss: Array = []
-	for m in ["menu", "dorm", "murino", "milk", "myt", "banya", "jmur", "fog", "boss", "win"]:
+	for m in ["menu", "dorm", "murino", "milk", "myt", "banya", "jmur", "fog", "fight", "boss", "boss2", "win"]:
 		var st: AudioStream = Snd._stream(Snd.MUSIC_DIR, m)
 		if st == null or st.get_length() < 10.0:
 			miss.append("music/" + m)
-	for x in ["item", "land", "jump", "step", "swing", "hit", "hit_big", "roll", "hurt", "deny", "throw", "spray", "am", "eat", "alert", "dash", "shoot", "die", "coin", "crate",
-			"break", "door", "ui", "blip", "lose", "open", "boss_die", "roar", "crash", "phone", "unlock", "win", "lift"]:
-		if Snd._stream(Snd.SFX_DIR, x) == null:
+	for x in ["item", "land", "jump", "step", "step_wood", "step_grass", "step_snow", "swing", "hit", "hit_big", "roll", "hurt", "deny", "throw", "spray", "slime", "am", "eat", "alert", "dash", "shoot", "die", "coin", "crate",
+			"break", "door", "ui", "blip", "lose", "open", "boss_die", "roar", "crash", "phone", "unlock", "win", "lift", "cups"]:
+		if not Snd.has_sfx(x):
 			miss.append("sfx/" + x)
-	t.ok(miss.is_empty(), "музыка и звуки на месте: 10 дорожек, 33 эффекта" if miss.is_empty() else "нет звуков: " + str(miss))
+	t.ok(miss.is_empty(), "музыка и звуки на месте: 12 дорожек, 38 эффектов" if miss.is_empty() else "нет звуков: " + str(miss))
+	# варианты звуков чередуются: на один и тот же звук подряд приходят разные записи
+	var seen := {}
+	for i in 40:
+		seen[Snd._pick("hit").resource_path] = true
+	t.ok(seen.size() >= 3, "у удара несколько вариантов (%d из 5)" % seen.size())
+	# музыка зацикливается: Snd.music ставит зацикливание на дорожке, иначе после первого круга наступала тишина
+	Snd.music("")
+	Snd.music("menu", 0.0)
+	await t.sim(0.2)
+	var ms: AudioStream = Snd._mus[Snd._cur].stream
+	var looped: bool = (ms is AudioStreamOggVorbis and (ms as AudioStreamOggVorbis).loop) or (ms is AudioStreamMP3 and (ms as AudioStreamMP3).loop)
+	t.ok(looped and ms.get_length() > 60.0, "музыка меню зациклена, длина %.0f с" % ms.get_length())
 	# озвучка: ключ реплики считается так же, как в tools/voice/extract_lines.py; без записи реплика просто молчит
 	t.ok(Snd.voice_key("drun", "Ч! Ты чё, спишь?! ФОГ ИДЁТ! Туман уже у вашей общаги!") == "c9c88f705865" and Snd.voice_key({"n": "Сосед"}, "x") == "Сосед|x".md5_text().substr(0, 12),
 		"ключ озвучки совпадает со сборщиком реплик: " + Snd.voice_key("drun", "Ч! Ты чё, спишь?! ФОГ ИДЁТ! Туман уже у вашей общаги!"))

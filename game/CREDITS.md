@@ -22,6 +22,13 @@
 
 - Код, уровни, тексты, текстуры (`tools/assets/make_textures.py`), дополнительные позы и анимации
   (`src/actors/poses.gd`) сделаны для этой игры.
-- Музыка (10 дорожек) и звуки (33 эффекта) целиком синтезированы скриптом `tools/audio/make_audio.py`,
-  сторонних записей и сэмплов в них нет.
+- Музыка — записи **Кевина Маклауда** с incompetech.com, лицензия
+  [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/). В игре использованы (нарезаны, зациклены
+  и выровнены по громкости скриптом `tools/audio/build_audio.py`):
+  Sneaky Snitch, Anxiety, Lobby Time, Carefree, Monkeys Spinning Monkeys, Frost Waltz, Hidden Agenda, Oppressive Gloom,
+  The Complex, Volatile Reaction, Black Vortex, Controlled Chaos — «Kevin MacLeod (incompetech.com), CC BY 4.0».
+- Звуки — наборы **Kenney** (kenney.nl), лицензия CC0 1.0: Impact Sounds, RPG Audio, Interface Sounds, UI Audio,
+  Digital Audio, Sci-Fi Sounds, Foley Sounds, Casino Audio, Music Jingles, Retro Sounds 1 и 2. Собраны в игру тем же скриптом.
+- Озвучка реплик (если включена) — синтез [Fish Audio](https://fish.audio) голосами, которые выбрал автор игры;
+  записи лежат в `assets/audio/voice/`.
 - Портреты в диалогах — кадры из открытых источников; при желании заменяются файлами в `assets/faces/`.

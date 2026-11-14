@@ -19,6 +19,7 @@ func build() -> void:
 	title = "БАНЬКА"
 	chapter = "ГЛАВА 5"
 	music = "banya"
+	steps = "snow"
 	set_env("snow")
 	_ground()
 	_yard()

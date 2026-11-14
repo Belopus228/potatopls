@@ -151,7 +151,7 @@ func begin(cp_name: String) -> void:
 func _boss_intro() -> void:
 	yard_gate = barrier(Vector3(0, 3, R + 1.4), Vector3(8.4, 6, 0.4), Color(0.8, 0.84, 0.92, 0.5))
 	await cut(func():
-		Snd.music("boss")
+		Snd.music("boss2" if Snd.has_music("boss2") else "boss")
 		G.cam.shot(Vector3(0, 2.2, 12), Vector3(0, 9, -24), 62.0)
 		boss.palm.visible = true
 		boss.rise_up()

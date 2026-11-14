@@ -28,6 +28,7 @@ func build() -> void:
 	title = "ОБЩАГА"
 	chapter = "ГЛАВА 1"
 	music = "dorm"
+	steps = "wood"
 	set_env("indoor")
 	if not G.save["flags"].has("dorm_code"):
 		var digs := [1, 2, 3, 4, 5, 6, 7, 8, 9]

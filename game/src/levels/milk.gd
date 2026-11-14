@@ -18,6 +18,7 @@ func build() -> void:
 	title = "СЕЛО МОЛОЧНОЕ"
 	chapter = "ГЛАВА 3"
 	music = "milk"
+	steps = "grass"
 	set_env("day")
 	_ground()
 	_village()

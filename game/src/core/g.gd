@@ -306,6 +306,8 @@ func go(lv: String, cp := "start") -> void:
 		save["lv"] = lv
 		save["cp"] = cp if lvl.cps.has(cp) else "start"
 		write_save()
+	Snd.set_fight(false)
+	Snd.step_kind = lvl.steps
 	Snd.music(lvl.music)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -333,6 +335,7 @@ func checkpoint(cp: String, quiet := false) -> void:
 
 func on_player_dead() -> void:
 	save["deaths"] = int(save["deaths"]) + 1
+	Snd.set_fight(false)
 	Snd.music("")
 	Snd.sfx("lose")
 	await wait(1.6)
