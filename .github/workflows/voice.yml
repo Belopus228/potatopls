@@ -10,7 +10,7 @@ name: Озвучка (Fish Audio)
 
 on:
   push:
-    branches: ['arena/c09c2baf-potatopls', 'main']
+    branches: ['arena/9059c47c-potatopls', 'arena/c09c2baf-potatopls', 'main']
     paths: ['tools/voice/voices.json']
   workflow_dispatch:
     inputs:

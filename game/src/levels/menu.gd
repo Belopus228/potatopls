@@ -25,6 +25,8 @@ func build() -> void:
 	txt("ШАВЕРМА", Vector3(9.85, 2.5, 1.5), -90.0, 0.55, {"col": Color(1.0, 0.75, 0.2), "glow": 2.0})
 	box(Vector3(9.87, 1.6, 1.5), Vector3(0.05, 0.9, 1.8), Mats.glow(Color(1.0, 0.85, 0.5), 2.0), {"col": false})
 	lamp(Vector3(9.0, 2.0, 1.5), Color(1.0, 0.8, 0.45), 3.0, 9.0)
+	lamp(Vector3(1.8, 2.3, 3.4), Color(0.88, 0.93, 1.0), 2.6, 11.0)
+	lamp(Vector3(1.1, 1.05, 2.5), Color(0.94, 0.96, 1.0), 2.2, 8.5)
 	txt("МУРИНО — ЭТО\nНЕ ЖМУРИНО!", Vector3(-10.9, 9.0, -13.0), 90.0, 1.5, {"col": Color(0.4, 0.85, 1.0), "glow": 2.2})
 	for p in [Vector3(-3.5, 0, -8), Vector3(4.5, 0, -14), Vector3(-5, 0, 9)]:
 		prop("street/TrafficLight", p, 0.0, 1.0, {"h": 3.4})
@@ -34,6 +36,8 @@ func build() -> void:
 
 func begin(_cp: String) -> void:
 	G.player.anim_lock = "Squat"
+	if G.player.model:
+		G.player.model.play("Squat", 0.0)
 	G.player.set_yaw(PI * 0.9)
 	Menus.main(G.ui)
 	tick(_orbit)

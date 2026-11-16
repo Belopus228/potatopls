@@ -2,9 +2,12 @@
 
 Игра — фанатская пародия, некоммерческая. Все сторонние материалы свободные.
 
-## Модели (CC0 1.0 — общественное достояние)
+## Модели (CC0 1.0 и CC BY 4.0)
 
-- **Quaternius** (https://quaternius.com): Ultimate Modular Men, Ultimate Modular Women, Ultimate Monsters,
+- **Mellstroy** (модель главного героя `assets/chars/mellstroy.glb`) — **Carl Johnson** (`Carl_Johnson142`),
+  [Sketchfab](https://sketchfab.com/3d-models/mellstroy-42ce851ee67d4a24bd28e4c493ce1cf4),
+  лицензия [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/).
+- **Quaternius** (https://quaternius.com, CC0 1.0 — общественное достояние): Ultimate Modular Men, Ultimate Modular Women, Ultimate Monsters,
   Easy Enemies, Animals, Mech, Cyberpunk Game Kit, Platformer Game Kit, House Interior, Nature, Medieval Village,
   Street, Survival, Modular Dungeon, RPG Items, Crops, Ships, Buildings.
   Файлы взяты из открытых репозиториев GitHub: `trebeljahr/quaternius-showcase`, `Hhk187/Zomopocalypse`,
@@ -20,8 +23,8 @@
 
 ## Своё
 
-- Код, уровни, тексты, текстуры (`tools/assets/make_textures.py`), дополнительные позы и анимации
-  (`src/actors/poses.gd`) сделаны для этой игры.
+- Код, уровни, тексты, текстуры (`tools/assets/make_textures.py`), дополнительные позы и перенос анимаций
+  (`src/actors/poses.gd`, `src/actors/retarget.gd`) сделаны для этой игры.
 - Музыка — записи **Кевина Маклауда** с incompetech.com, лицензия
   [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/). В игре использованы (нарезаны, зациклены
   и выровнены по громкости скриптом `tools/audio/build_audio.py`):

@@ -108,6 +108,7 @@ func write_settings() -> void:
 
 
 func apply_settings() -> void:
+	Mats.set_quality(quality)
 	Snd.set_volumes(float(settings["music"]), float(settings["sfx"]))
 	Snd.set_voice(bool(settings.get("voice", true)), float(settings.get("voice_vol", 1.0)))
 	var vp := get_viewport()

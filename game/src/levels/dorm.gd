@@ -533,6 +533,21 @@ func _leave() -> void:
 
 func _physics_process(dt: float) -> void:
 	super._physics_process(dt)
+	# Страховка границ общаги: ни одна крыса не может вылететь за стены или под пол
+	for e in G.ents:
+		if not is_instance_valid(e) or e.dead or e.boss:
+			continue
+		var ep: Vector3 = e.global_position
+		var ok := false
+		if ep.y > -1.5:
+			var in_main := ep.x >= -27.7 and ep.x <= 25.7 and ep.z >= -7.4 and ep.z <= 7.4
+			var in_stair := ep.x >= 15.1 and ep.x <= 22.8 and ep.z >= 1.6 and ep.z <= 12.2
+			ok = (in_main or in_stair) and ep.y <= 3.2
+		else:
+			ok = ep.x >= -23.7 and ep.x <= 22.7 and ep.z >= 2.1 and ep.z <= 17.7 and ep.y >= -5.2
+		if not ok:
+			e.global_position = e.home
+			e.velocity = Vector3.ZERO
 	if not hinted_fight and G.mode == "play":
 		for e in G.ents:
 			if is_instance_valid(e) and e.aggro and not e.boss:

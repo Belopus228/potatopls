@@ -187,6 +187,34 @@ const PHONE_B := {
 		"UpperArm.R": Vector3(-0.55, -0.62, 0.6), "LowerArm.R": Vector3(0.25, 0.95, -0.08),
 	},
 }
+const THROW_A := {     # замах правой рукой с пачкой купюр
+	"body": Vector3(0, -0.04, 0),
+	"rot": {"Body": Vector3(-4, -24, 0), "Head": Vector3(2, 20, 0)},
+	"aim": {
+		"UpperArm.R": Vector3(-0.65, -0.15, -0.74), "LowerArm.R": Vector3(-0.35, 0.72, -0.58),
+		"UpperArm.L": Vector3(0.35, -0.35, 0.85), "LowerArm.L": Vector3(0.15, -0.25, 0.95),
+		"UpperLeg.L": Vector3(0.16, -0.95, 0.25), "UpperLeg.R": Vector3(-0.18, -0.95, -0.22),
+	},
+}
+const THROW_B := {     # резкий бросок вперёд
+	"body": Vector3(0, -0.06, 0.08),
+	"rot": {"Body": Vector3(12, 26, 0), "Head": Vector3(-8, -20, 0)},
+	"aim": {
+		"UpperArm.R": Vector3(-0.12, -0.06, 0.99), "LowerArm.R": Vector3(0.08, -0.12, 0.99),
+		"UpperArm.L": Vector3(0.55, -0.55, -0.62), "LowerArm.L": Vector3(0.35, -0.65, -0.65),
+		"UpperLeg.L": Vector3(0.16, -0.92, 0.34), "UpperLeg.R": Vector3(-0.18, -0.94, -0.28),
+	},
+}
+const JUMP2_A := {     # двойной прыжок: группировка в воздухе
+	"body": Vector3(0, 0.08, 0),
+	"rot": {"Body": Vector3(14, 0, 0), "Head": Vector3(-12, 0, 0)},
+	"aim": {
+		"UpperLeg.L": Vector3(0.22, 0.12, 0.96), "UpperLeg.R": Vector3(-0.22, 0.12, 0.96),
+		"LowerLeg.L": Vector3(0.08, -0.65, -0.75), "LowerLeg.R": Vector3(-0.08, -0.65, -0.75),
+		"UpperArm.L": Vector3(0.85, 0.45, 0.25), "UpperArm.R": Vector3(-0.85, 0.45, 0.25),
+		"LowerArm.L": Vector3(0.55, 0.82, 0.15), "LowerArm.R": Vector3(-0.55, 0.82, 0.15),
+	},
+}
 
 
 static func add_human_clips(lib: AnimationLibrary, scene: Node3D, sk: Skeleton3D) -> void:
@@ -195,11 +223,13 @@ static func add_human_clips(lib: AnimationLibrary, scene: Node3D, sk: Skeleton3D
 	lib.add_animation("Steam", b.make(3.6, true, [[0.0, STEAM], [1.8, STEAM_B], [3.6, STEAM]]))
 	lib.add_animation("Squat", b.make(3.0, true, [[0.0, SQUAT], [1.5, SQUAT_B], [3.0, SQUAT]]))
 	lib.add_animation("Jump", b.make(0.34, false, [[0.0, JUMP_A], [0.16, JUMP_B], [0.34, JUMP_B]]))
+	lib.add_animation("Jump2", b.make(0.38, false, [[0.0, JUMP2_A], [0.22, JUMP2_A], [0.38, JUMP_B]]))
 	lib.add_animation("Fall", b.make(0.7, true, [[0.0, FALL_A], [0.35, FALL_B], [0.7, FALL_A]]))
 	lib.add_animation("Shout", b.make(0.36, true, [[0.0, SHOUT_A], [0.18, SHOUT_B], [0.36, SHOUT_A]]))
 	lib.add_animation("Dance", b.make(1.0, true, [[0.0, DANCE_A], [0.25, DANCE_M], [0.5, DANCE_B], [0.75, DANCE_M], [1.0, DANCE_A]]))
 	lib.add_animation("Cheer", b.make(0.7, true, [[0.0, CHEER_A], [0.35, CHEER_B], [0.7, CHEER_A]]))
 	lib.add_animation("Phone", b.make(2.4, true, [[0.0, PHONE], [1.2, PHONE_B], [2.4, PHONE]]))
+	lib.add_animation("Throw", b.make(0.36, false, [[0.0, THROW_A], [0.13, THROW_B], [0.36, THROW_B]]))
 	sk.reset_bone_poses()
 
 

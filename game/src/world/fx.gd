@@ -35,8 +35,8 @@ static func _particle_mesh(col: Color, size := 0.18) -> QuadMesh:
 	m.albedo_color = col
 	m.albedo_texture = _dot()
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	m.vertex_color_use_as_albedo = true
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
 	q.material = m
 	_pmat[key] = q
 	return q
@@ -106,6 +106,7 @@ static func _burst(parent: Node, pos: Vector3, col: Color, n: int, speed: float,
 	p.gravity = Vector3(0, -grav, 0)
 	p.scale_amount_min = 0.6
 	p.scale_amount_max = 1.3
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	p.emitting = true
 	parent.add_child(p)
 	p.global_position = pos
@@ -126,7 +127,7 @@ static func puff(parent: Node, pos: Vector3, col: Color, n := 10) -> void:
 
 static func spray_emitter() -> CPUParticles3D:
 	var p := CPUParticles3D.new()
-	p.mesh = _particle_mesh(Color(0.8, 1.0, 0.75, 0.5), 0.4)
+	p.mesh = _particle_mesh(Color(0.72, 0.98, 0.78, 0.42), 0.24)
 	p.amount = 26
 	p.lifetime = 0.5
 	p.direction = Vector3(0, 0, -1)
@@ -135,7 +136,8 @@ static func spray_emitter() -> CPUParticles3D:
 	p.initial_velocity_max = 10.0
 	p.gravity = Vector3(0, 0.5, 0)
 	p.scale_amount_min = 0.5
-	p.scale_amount_max = 1.6
+	p.scale_amount_max = 1.5
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	p.emitting = false
 	p.local_coords = false
 	return p
@@ -154,6 +156,7 @@ static func emitter(col: Color, amount: int, life: float, size: float, dir: Vect
 	p.gravity = grav
 	p.scale_amount_min = 0.6
 	p.scale_amount_max = 1.4
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	if box != Vector3.ZERO:
 		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
 		p.emission_box_extents = box

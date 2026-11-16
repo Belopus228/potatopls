@@ -196,13 +196,16 @@ func apply_quality() -> void:
 	if env == null:
 		return
 	var q := G.quality
+	Mats.set_quality(q)
+	if G.ui and G.ui.grade:
+		G.ui.grade.apply_env(env_name)
 	sun.shadow_enabled = q >= 1 and sun.visible
 	env.glow_enabled = q >= 1
-	env.glow_intensity = 0.5
-	env.glow_bloom = 0.0
+	env.glow_intensity = 0.58 if q >= 2 else 0.45
+	env.glow_bloom = 0.06 if q >= 2 else 0.0
 	env.glow_hdr_threshold = 1.25
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
-	var want: int = [3, 5, 8][q]
+	var want: int = [3, 6, 10][q]
 	while _pool.size() > want:
 		var e: Dictionary = _pool.pop_back()
 		if e["lamp"] != null:

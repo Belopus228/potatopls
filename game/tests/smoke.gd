@@ -150,3 +150,38 @@ func run(t) -> void:
 					seen_heavy[round] = true
 	t.ok(not seen_heavy[0] and seen_heavy[1], "вертуха: без предмета её нет, с предметом идёт четвёртым ударом (%s)" % str(seen_heavy))
 	t.ok(G.player.model.ap.has_animation("Kick_Left"), "у героя есть анимация вертухи")
+	# модель Меллстроя: 32-костный скелет, перенесённые анимации, бросок котлеты, дихлофос на бегу, цепь и телефон
+	await t.sim(0.8)
+	var pm := G.player.model
+	var miss_clips: Array = []
+	for cname in ["Idle", "Walk", "Run", "Jump", "Jump2", "Fall", "Roll", "Punch_Right", "Punch_Left", "Kick_Right", "Kick_Left", "Throw", "Run_Shoot", "Idle_Gun_Pointing", "Shout", "Phone", "Squat", "Sit", "Steam", "Death", "HitRecieve"]:
+		if not pm.ap.has_animation(cname):
+			miss_clips.append(cname)
+	t.ok(pm.skel != null and pm.skel.get_bone_count() == 32 and miss_clips.is_empty(),
+		"модель Меллстроя: 32 кости, все анимации на месте" if miss_clips.is_empty() else "нет клипов: " + str(miss_clips))
+	G.give("chain", 1, true)
+	G.give("spray", 1, true)
+	G.pay(10)
+	await t.sim(0.05)
+	var has_chain_prop: bool = G.player.chain_node != null and G.player.chain_node.visible
+	G.player.anim_lock = "Phone"
+	await t.sim(0.05)
+	var has_phone_prop: bool = G.player.phone_node != null and G.player.phone_node.visible
+	G.player.anim_lock = ""
+	await t.sim(0.05)
+	var hide_phone_prop: bool = G.player.phone_node != null and not G.player.phone_node.visible
+	Inp.press("throw")
+	await t.sim(0.08)
+	Inp.release("throw")
+	var throw_ok: bool = G.player.state == "throw" and G.player.model.cur == "Throw"
+	await t.sim(0.45)
+	Inp.press("gadget")
+	Inp.press("move_up")
+	await t.sim(0.2)
+	var spray_can_ok: bool = G.player.can_node != null and G.player.can_node.visible
+	var spray_anim_ok: bool = G.player.model.cur == "Run_Shoot"
+	Inp.release("move_up")
+	Inp.release("gadget")
+	await t.sim(0.1)
+	t.ok(has_chain_prop and has_phone_prop and hide_phone_prop and throw_ok and spray_can_ok and spray_anim_ok,
+		"аксессуары и новые анимации: цепь=%s телефон=%s/%s бросок=%s баллон=%s/%s" % [str(has_chain_prop), str(has_phone_prop), str(hide_phone_prop), str(throw_ok), str(spray_can_ok), str(spray_anim_ok)])

@@ -4,7 +4,7 @@ name: Сборка игры (Godot)
 
 on:
   push:
-    branches: ['arena/c09c2baf-potatopls', 'main']
+    branches: ['arena/9059c47c-potatopls', 'arena/c09c2baf-potatopls', 'main']
     paths: ['game/**', '.github/workflows/build.yml']
   workflow_dispatch:
   workflow_call:          # так сборку запускает сценарий озвучки после того, как положит записи в ветку

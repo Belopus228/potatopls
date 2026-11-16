@@ -4,6 +4,7 @@ extends RefCounted
 ## поэтому любой ящик любого размера получает ровную плитку без ручной развёртки.
 
 const TEX_DIR := "res://assets/tex/"
+const NORMAL_TEXS := ["asphalt", "brick", "concrete", "panel", "planks", "logs", "tiles", "mosaic", "rust", "wood", "carpet"]
 ## имя -> { tex, tile (метров на плитку), color (оттенок), rough, metal, emit, energy }
 const DEFS := {
 	"asphalt": {"tex": "asphalt", "tile": 4.0, "rough": 0.95},
@@ -63,6 +64,38 @@ const DEFS := {
 }
 
 static var _cache := {}
+static var _norm_cache := {}
+static var quality := 2
+
+
+static func _get_normal(tex_name: String) -> Texture2D:
+	if _norm_cache.has(tex_name):
+		return _norm_cache[tex_name]
+	var path := TEX_DIR + tex_name + ".png"
+	var out: Texture2D = null
+	if ResourceLoader.exists(path):
+		var tex: Texture2D = load(path)
+		if tex:
+			var img := tex.get_image()
+			if img and not img.is_empty():
+				img = img.duplicate()
+				if img.is_compressed():
+					img.decompress()
+				img.bump_map_to_normal_map(2.2)
+				img.generate_mipmaps()
+				out = ImageTexture.create_from_image(img)
+	_norm_cache[tex_name] = out
+	return out
+
+
+static func set_quality(q: int) -> void:
+	quality = q
+	var on := quality >= 1
+	var sc := 0.45 if quality >= 2 else 0.30
+	for m in _cache.values():
+		if m is StandardMaterial3D and (m as StandardMaterial3D).normal_texture != null:
+			(m as StandardMaterial3D).normal_enabled = on
+			(m as StandardMaterial3D).normal_scale = sc
 
 
 static func get_mat(key: Variant) -> Material:
@@ -79,7 +112,8 @@ static func get_mat(key: Variant) -> Material:
 	var col: Color = d.get("color", Color.WHITE)
 	m.albedo_color = col
 	if d.has("tex"):
-		var path := TEX_DIR + String(d["tex"]) + ".png"
+		var tname := String(d["tex"])
+		var path := TEX_DIR + tname + ".png"
 		if ResourceLoader.exists(path):
 			m.albedo_texture = load(path)
 			m.uv1_triplanar = true
@@ -87,6 +121,12 @@ static func get_mat(key: Variant) -> Material:
 			var tile: float = d.get("tile", 2.0)
 			m.uv1_scale = Vector3.ONE / tile
 			m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			if tname in NORMAL_TEXS:
+				var nt := _get_normal(tname)
+				if nt:
+					m.normal_texture = nt
+					m.normal_enabled = quality >= 1
+					m.normal_scale = 0.45 if quality >= 2 else 0.30
 	m.roughness = d.get("rough", 0.8)
 	m.metallic = d.get("metal", 0.0)
 	if col.a < 0.99:

@@ -29,6 +29,7 @@ var tutor_box: PanelContainer
 var tutor_title: Label
 var tutor_text: RichTextLabel
 var tutor_bar: Bar
+var tutor_hint: Label
 var _tutor_tw: Tween
 
 
@@ -76,18 +77,25 @@ class Marks:
 
 	func _draw() -> void:
 		var f := UI.font_bold()
+		var pulse := sin(Time.get_ticks_msec() * 0.008) * 1.6
 		for it in items:
 			var c: Vector2 = it["pos"]
 			var on: bool = it["on"]
 			var a: float = it["a"]
-			var r := 17.0 if on else 10.0
-			draw_circle(c, r + 3.0, Color(0, 0, 0, 0.5 * a))
+			var r := (17.0 + pulse) if on else 10.5
+			if on:
+				draw_arc(c, r + 5.5, 0, TAU, 28, Color(1.0, 0.85, 0.2, 0.42 * a), 2.5, true)
+			draw_circle(c, r + 3.0, Color(0, 0, 0, 0.52 * a))
 			draw_circle(c, r, Color(1.0, 0.82, 0.12, a) if on else Color(0.1, 0.1, 0.13, 0.85 * a))
 			draw_arc(c, r, 0, TAU, 28, Color(1.0, 0.82, 0.12, a), 2.0, true)
 			var t: String = it["key"]
 			var fs := 20 if on else 12
 			var w := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			draw_string(f, c + Vector2(-w * 0.5, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.07, 0.07, 0.09, a) if on else Color(1, 1, 1, a))
+
+	func _process(_dt: float) -> void:
+		if not items.is_empty():
+			queue_redraw()
 
 
 func _bar(pos: Vector2, sz: Vector2, col: Color, r := 8) -> Bar:
@@ -209,6 +217,9 @@ func _ready() -> void:
 	tutor_bar.radius = 4
 	tutor_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tv.add_child(tutor_bar)
+	tutor_hint = UI.label("", 13, Color(1, 1, 1, 0.55))
+	tutor_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tv.add_child(tutor_hint)
 	tutor_box.visible = false
 	add_child(tutor_box)
 	# подсказка действия
@@ -283,11 +294,11 @@ func set_goal(text: String, pos: Variant = null) -> void:
 
 func set_boss(b: Enemy) -> void:
 	boss = b
-	boss_box.visible = b != null
+	boss_box.visible = b != null and G.mode == "play"
 	if b:
 		boss_lbl.text = b.title.to_upper()
 		boss_bar.ghost = 1.0
-	hints.visible = b == null
+	hints.visible = b == null and G.mode == "play" and not G.ui.dlg.visible
 
 
 func set_prompt_visible(v: bool) -> void:
@@ -301,6 +312,8 @@ func tutor_show(title: String, bb: String, k: float) -> void:
 	if tutor_text.text != t:
 		tutor_text.text = t
 	tutor_bar.set_v(k)
+	if tutor_hint:
+		tutor_hint.text = "Пауза (%s) — пропустить обучение" % Inp.hint("pause")
 	tutor_box.visible = true
 
 
@@ -351,10 +364,12 @@ func _update_marks(p: Player, prompt_on: bool) -> void:
 				continue
 			var on: bool = prompt_on and p.near == it
 			# сквозь стену значок не показываем (кроме того, с чем уже можно работать)
-			if not on and not space.intersect_ray(PhysicsRayQueryParameters3D.create(cp, ip, 1)).is_empty():
-				var hitp: Vector3 = space.intersect_ray(PhysicsRayQueryParameters3D.create(cp, ip, 1))["position"]
-				if hitp.distance_to(ip) > 0.6:
-					continue
+			if not on:
+				var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(cp, ip, 1))
+				if not hit.is_empty():
+					var hitp: Vector3 = hit["position"]
+					if hitp.distance_to(ip) > 0.6:
+						continue
 			list.append({"pos": cam.unproject_position(ip + Vector3(0, 0.35 if it.has("node") else 0.0, 0)), "on": on, "a": clampf((far - d) / 1.5, 0.0, 1.0), "key": key})
 	if list.is_empty() and marks.items.is_empty():
 		return
@@ -387,13 +402,19 @@ func _process(_dt: float) -> void:
 	prompt.visible = show_prompt
 	if show_prompt:
 		var lab := String(p.near["label"])
+		if lab == "Поговорить" and p.near.has("node") and p.near["node"] is Npc:
+			var nm := String((p.near["node"] as Npc).cname)
+			if nm != "":
+				lab = "Поговорить · " + nm
 		prompt_lbl.text = lab if G.touch else "[%s]  %s" % [Inp.hint("interact"), lab]
 	_update_marks(p, show_prompt)
+	hints.visible = boss == null and G.mode == "play" and not G.ui.dlg.visible
 	# босс
 	if boss != null:
 		if not is_instance_valid(boss) or boss.dead:
 			set_boss(null)
 		else:
+			boss_box.visible = G.mode == "play"
 			boss_bar.set_v(boss.hp / boss.hp_max)
 	# метка цели
 	var cam: Camera3D = G.cam.active() if G.cam else null

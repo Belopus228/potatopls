@@ -6,12 +6,12 @@ const SKIN := Color("e7bb9b")
 const SKIN_D := Color("d7a787")
 const HAIR_DARK := Color("1d1511")
 
-## облики героя
+## облики героя — модель Меллстроя (Sketchfab, CC-BY-4.0), оригинальные текстуры для casual и оттенки для вариантов
 const SKINS := {
-	"casual": {"rig": "men", "body": "casual", "colors": {"White": Color("f2f2ee"), "LightBlue": Color("17181d"), "Red_Dark": Color("e9e9e6"), "LightBrown": Color("b9b9b6"), "Skin": SKIN, "Skin_Darker": SKIN_D, "Hair": HAIR_DARK, "Eyebrows": HAIR_DARK}},
-	"suit": {"rig": "men", "body": "suit", "colors": {"Suit": Color("15161b"), "White": Color("f4f4f0"), "Tie": Color("c9a227"), "Black": Color("0c0c0e"), "Skin": SKIN, "Hair": HAIR_DARK, "Eyebrows": HAIR_DARK}},
-	"hoodie": {"rig": "men", "body": "hoodie", "colors": {"Purple": Color("e8e8e4"), "LightBlue": Color("15161a"), "White": Color("d8d8d8"), "Skin": SKIN, "Hair": HAIR_DARK, "Eyebrows": HAIR_DARK}},
-	"beach": {"rig": "men", "body": "beach", "colors": {"White": Color("f0f0ec"), "Red_Dark": Color("c9a227"), "Skin": SKIN, "Hair": HAIR_DARK, "Eyebrows": HAIR_DARK}},
+	"casual": {"rig": "mellstroy", "body": "casual", "shirt_mod": Color.WHITE, "pants_mod": Color.WHITE},
+	"suit": {"rig": "mellstroy", "body": "suit", "shirt_mod": Color(0.36, 0.38, 0.44), "pants_mod": Color(0.34, 0.35, 0.40)},
+	"hoodie": {"rig": "mellstroy", "body": "hoodie", "shirt_mod": Color(0.88, 0.88, 0.92), "pants_mod": Color(0.45, 0.47, 0.52)},
+	"beach": {"rig": "mellstroy", "body": "beach", "shirt_mod": Color.WHITE, "pants_mod": Color(1.0, 0.86, 0.45)},
 }
 
 const CAST := {

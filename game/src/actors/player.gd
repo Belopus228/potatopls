@@ -44,6 +44,7 @@ var ult_wave := 0
 var sprinting := false
 var chain_node: Node3D
 var can_node: Node3D
+var phone_node: Node3D
 var trail: Array = []           # след: недавние точки на земле; по нему существа находят дорогу через двери
 var _was_floor := true
 var _spray_fx: CPUParticles3D
@@ -71,6 +72,8 @@ func set_skin(skin: String) -> void:
 	model.play("Idle")
 	chain_node = null
 	can_node = null
+	phone_node = null
+	_sync_props()
 
 
 func place(pos: Vector3, y := 0.0) -> void:
@@ -158,6 +161,11 @@ func _physics_process(dt: float) -> void:
 	move_and_slide()
 	_separate(dt)
 	turn_model(dt, 16.0)
+	if model:
+		var hs_lean := Vector2(velocity.x, velocity.z).length()
+		var bank := clampf(-wrapf(yaw - model.rotation.y, -PI, PI) * 0.16, -0.11, 0.11) if (ctl and on_floor and state == "move" and hs_lean > 2.0) else 0.0
+		model.rotation.z = lerpf(model.rotation.z, bank, clampf(10.0 * dt, 0.0, 1.0))
+	_sync_props()
 
 	# приземление
 	var now_floor := is_on_floor()
@@ -243,7 +251,7 @@ func _st_move(dt: float, wish: Vector3, on_floor: bool) -> void:
 			jump_buf = 0.0
 			Snd.sfx("jump", -2.0, 1.25)
 			Fx.ring(get_parent(), global_position, Color(1, 0.85, 0.3), 1.2, 0.3)
-			model.play("Jump", 0.05, 1.0, true)
+			model.play("Jump2" if model.has("Jump2") else "Jump", 0.05, 1.0, true)
 	# анимация
 	var hs := Vector2(velocity.x, velocity.z).length()
 	if not on_floor:
@@ -476,14 +484,14 @@ func _start_throw() -> void:
 		face(tgt.global_position)
 	elif G.cam:
 		yaw = G.cam.yaw
-	model.play("Sword_Slash", 0.06, 2.4, true)
+	model.play("Throw", 0.06, 1.0, true)
 
 
 func _st_throw(dt: float, wish: Vector3) -> void:
 	var target := wish * WALK * 0.5
 	velocity.x = move_toward(velocity.x, target.x, 30.0 * dt)
 	velocity.z = move_toward(velocity.z, target.z, 30.0 * dt)
-	if not hit_done and state_t >= 0.16:
+	if not hit_done and state_t >= 0.13:
 		hit_done = true
 		var tgt := _aim_target(16.0, 6.0, 0.3)
 		var from := global_position + Vector3(0, 1.35, 0) + fwd() * 0.5
@@ -494,7 +502,7 @@ func _st_throw(dt: float, wish: Vector3) -> void:
 			dir = (dir + Vector3(0, 0.06, 0)).normalized()
 		Shot.fire(get_parent(), "cash", from, dir * 24.0, 16.0 * G.dmg_mult(), "player")
 		Snd.sfx("throw", -5.0)
-	if state_t >= 0.4:
+	if state_t >= 0.36:
 		state = "move"
 
 
@@ -506,15 +514,20 @@ func _st_spray(dt: float, wish: Vector3) -> void:
 		yaw = lerp_angle(yaw, G.cam.yaw, clampf(8.0 * dt, 0.0, 1.0))
 	elif wish.length() >= 0.2:
 		yaw = lerp_angle(yaw, atan2(-wish.x, -wish.z), clampf(8.0 * dt, 0.0, 1.0))
-	model.play("Idle_Gun_Pointing", 0.12)
+	var hs := Vector2(velocity.x, velocity.z).length()
+	if hs > 0.6 and model.has("Run_Shoot"):
+		model.play("Run_Shoot", 0.12, clampf(hs / 2.2, 0.75, 1.35))
+	else:
+		model.play("Idle_Gun_Pointing", 0.12)
 	spray -= dt * 0.3
 	_spray_fx.emitting = true
-	_spray_fx.position = Vector3(0, 1.25, 0) + fwd() * 0.55
-	_spray_fx.direction = fwd()
+	var f := fwd()
+	var right := Vector3(-f.z, 0.0, f.x)
+	_spray_fx.position = Vector3(0, 1.32, 0) + f * 0.62 + right * 0.16
+	_spray_fx.direction = f
 	spray_tick -= dt
 	if spray_tick <= 0.0:
 		spray_tick = 0.1
-		var f := fwd()
 		for e in G.ents.duplicate():
 			if not is_instance_valid(e) or e.dead:
 				continue
@@ -621,7 +634,146 @@ func _push_from(p: Vector3, min_d: float, h: float, dt: float) -> void:
 	var l := d.length()
 	if l < min_d and l > 0.001:
 		var push := d / l * (min_d - l) * minf(1.0, 14.0 * dt)
-		global_position += push
+		move_and_collide(push)
+
+
+static func _build_chain_mesh() -> ArrayMesh:
+	# Кривая по шее, ключицам и верхней части груди в локальных осях Spine1_03 (+X вверх, +Y вперёд, +Z влево)
+	var ctrl: Array[Vector3] = [
+		Vector3(0.368, -0.078, 0.0),
+		Vector3(0.352, -0.042, 0.068),
+		Vector3(0.324, 0.058, 0.096),
+		Vector3(0.245, 0.148, 0.062),
+		Vector3(0.156, 0.180, 0.0),
+		Vector3(0.245, 0.148, -0.062),
+		Vector3(0.324, 0.058, -0.096),
+		Vector3(0.352, -0.042, -0.068),
+	]
+	var n_ctrl := ctrl.size()
+	var steps := 32
+	var pts: Array[Vector3] = []
+	for i in steps:
+		var t := float(i) * float(n_ctrl) / float(steps)
+		var i0 := int(floor(t)) % n_ctrl
+		var f: float = t - floor(t)
+		pts.append(ctrl[i0].cubic_interpolate(ctrl[(i0 + 1) % n_ctrl], ctrl[(i0 - 1 + n_ctrl) % n_ctrl], ctrl[(i0 + 2) % n_ctrl], f))
+	var sides := 8
+	var r := 0.0115
+	var center := Vector3(0.26, 0.04, 0.0)
+	var rings: Array = []
+	for i in steps:
+		var tang := (pts[(i + 1) % steps] - pts[(i - 1 + steps) % steps]).normalized()
+		var out_dir := (pts[i] - center)
+		var u := (out_dir - tang * out_dir.dot(tang)).normalized()
+		var v := tang.cross(u).normalized()
+		var ring: Array[Vector3] = []
+		for j in sides:
+			var a := TAU * float(j) / float(sides)
+			ring.append(pts[i] + (u * cos(a) + v * sin(a)) * r)
+		rings.append(ring)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in steps:
+		var r0: Array = rings[i]
+		var r1: Array = rings[(i + 1) % steps]
+		for j in sides:
+			var j1 := (j + 1) % sides
+			var n0 := ((r0[j] as Vector3) - pts[i]).normalized()
+			var n1 := ((r0[j1] as Vector3) - pts[i]).normalized()
+			var n2 := ((r1[j] as Vector3) - pts[(i + 1) % steps]).normalized()
+			var n3 := ((r1[j1] as Vector3) - pts[(i + 1) % steps]).normalized()
+			st.set_normal(n0); st.add_vertex(r0[j])
+			st.set_normal(n2); st.add_vertex(r1[j])
+			st.set_normal(n1); st.add_vertex(r0[j1])
+			st.set_normal(n1); st.add_vertex(r0[j1])
+			st.set_normal(n2); st.add_vertex(r1[j])
+			st.set_normal(n3); st.add_vertex(r1[j1])
+	return st.commit()
+
+
+func _sync_props() -> void:
+	if model == null or model.skel == null:
+		return
+	var show_chain := G.has("chain") and not dead
+	if show_chain and chain_node == null:
+		var at := model.attach("Chest")
+		chain_node = Node3D.new()
+		var chain_mi := MeshInstance3D.new()
+		chain_mi.mesh = _build_chain_mesh()
+		chain_mi.material_override = Mats.get_mat("gold")
+		chain_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		chain_node.add_child(chain_mi)
+		var med := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.028
+		cyl.bottom_radius = 0.028
+		cyl.height = 0.011
+		cyl.radial_segments = 16
+		med.mesh = cyl
+		med.material_override = Mats.get_mat("gold")
+		med.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		med.position = Vector3(0.142, 0.182, 0.0)
+		med.rotation.z = deg_to_rad(-8.0)
+		chain_node.add_child(med)
+		at.add_child(chain_node)
+	if chain_node:
+		chain_node.visible = show_chain
+
+	var show_can := (state == "spray") and not dead
+	if show_can and can_node == null:
+		var at := model.attach("Wrist.R")
+		can_node = Node3D.new()
+		can_node.position = Vector3(0.06, 0.03, 0.02)
+		var body_mi := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.034
+		cm.bottom_radius = 0.034
+		cm.height = 0.15
+		cm.radial_segments = 14
+		body_mi.mesh = cm
+		body_mi.material_override = Mats.get_mat("red")
+		body_mi.rotation.x = PI * 0.5
+		body_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		can_node.add_child(body_mi)
+		var cap_mi := MeshInstance3D.new()
+		var cap := CylinderMesh.new()
+		cap.top_radius = 0.020
+		cap.bottom_radius = 0.028
+		cap.height = 0.035
+		cap.radial_segments = 12
+		cap_mi.mesh = cap
+		cap_mi.material_override = Mats.get_mat("white")
+		cap_mi.rotation.x = PI * 0.5
+		cap_mi.position = Vector3(0.0, 0.0, 0.09)
+		cap_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		can_node.add_child(cap_mi)
+		at.add_child(can_node)
+	if can_node:
+		can_node.visible = show_can
+
+	var show_phone := (anim_lock == "Phone") and not dead
+	if show_phone and phone_node == null:
+		var at := model.attach("Wrist.R")
+		phone_node = Node3D.new()
+		phone_node.position = Vector3(0.065, 0.025, 0.0)
+		var body_mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.14, 0.012, 0.072)
+		body_mi.mesh = bm
+		body_mi.material_override = Mats.get_mat("black")
+		body_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		phone_node.add_child(body_mi)
+		var scr_mi := MeshInstance3D.new()
+		var sm := BoxMesh.new()
+		sm.size = Vector3(0.125, 0.004, 0.062)
+		scr_mi.mesh = sm
+		scr_mi.material_override = Mats.glow(Color(0.55, 0.82, 1.0), 1.4)
+		scr_mi.position = Vector3(0.0, -0.006, 0.0)
+		scr_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		phone_node.add_child(scr_mi)
+		at.add_child(phone_node)
+	if phone_node:
+		phone_node.visible = show_phone
 
 
 func _find_near(ctl: bool) -> void:

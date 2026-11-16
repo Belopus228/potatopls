@@ -6,6 +6,8 @@ extends Node3D
 ## к 24 клипам из набора добавляются позы, собранные кодом (сидеть, прыжок, падение, танец, крик).
 ## Существа играют свои клипы; обращение идёт по смыслу: play("idle"), play("attack")…
 
+const MELLSTROY_SCENE := "res://assets/chars/mellstroy.glb"
+const _Retarget := preload("res://src/actors/retarget.gd")
 const RIGS := {
 	"men": {"anims": "res://assets/chars/men_anims.glb", "dir": "res://assets/chars/men/"},
 	"women": {"anims": "res://assets/chars/women_anims.glb", "dir": "res://assets/chars/women/"},
@@ -42,17 +44,85 @@ var _flash_t := 0.0
 var _sem_cache := {}
 
 
-## Человек. look: { rig = "men", body = "casual", colors = { "White": Color, … }, scale = 1.0 }
+## Человек. look: { rig = "mellstroy" | "men" | "women", body = "casual", colors = { … }, scale = 1.0 }
 static func human(look: Dictionary) -> Model:
 	var m := Model.new()
 	var rig: String = look.get("rig", "men")
-	var ps: PackedScene = load(RIGS[rig]["dir"] + String(look.get("body", "casual")) + ".glb")
-	m._setup(ps.instantiate(), "rig:" + rig, RIGS[rig]["anims"], true)
-	if look.has("colors"):
-		m.recolor(look["colors"])
+	if rig == "mellstroy" and ResourceLoader.exists(MELLSTROY_SCENE):
+		var ps_m: PackedScene = load(MELLSTROY_SCENE)
+		m._setup_mellstroy(ps_m.instantiate(), look)
+	else:
+		var use_rig := rig if RIGS.has(rig) else "men"
+		var ps: PackedScene = load(RIGS[use_rig]["dir"] + String(look.get("body", "casual")) + ".glb")
+		m._setup(ps.instantiate(), "rig:" + use_rig, RIGS[use_rig]["anims"], true)
+		if look.has("colors"):
+			m.recolor(look["colors"])
 	if look.has("scale"):
 		m.scale = Vector3.ONE * float(look["scale"])
 	return m
+
+
+func _setup_mellstroy(inst: Node3D, look: Dictionary) -> void:
+	scene = inst
+	# В Sketchfab-сцене корень mellstroy_FBX имеет масштаб 0.0254 (дюймы -> метры),
+	# а после скининга модель уже смотрит вдоль -Z и имеет рост 1.833 м (низ стоп y = -1.018).
+	var k := 1.80 / 1.833
+	scene.scale = Vector3.ONE * (k / 0.0254)
+	scene.rotation = Vector3.ZERO
+	scene.position = Vector3(-0.031 * k, 1.038 * k, 0.0)
+	add_child(scene)
+	skel = scene.find_child("Skeleton3D", true, false)
+	for n in scene.find_children("*", "MeshInstance3D", true, false):
+		meshes.append(n)
+	var own: AnimationPlayer = scene.find_child("AnimationPlayer", true, false)
+	if own:
+		own.name = "SrcAnim"
+		own.queue_free()
+	if not _libs.has("rig:men"):
+		var tmp_men := Model.new()
+		var ps_men: PackedScene = load(RIGS["men"]["dir"] + "casual.glb")
+		tmp_men._setup(ps_men.instantiate(), "rig:men", RIGS["men"]["anims"], true)
+		tmp_men.free()
+	if not _libs.has("rig:mellstroy"):
+		_libs["rig:mellstroy"] = _Retarget.build_mellstroy_lib(_libs["rig:men"], self, skel, scene)
+	_tune_mellstroy_mats(look)
+	ap = AnimationPlayer.new()
+	ap.name = "Anim"
+	scene.add_child(ap)
+	ap.add_animation_library("", _libs["rig:mellstroy"])
+	ap.playback_default_blend_time = 0.15
+
+
+func _tune_mellstroy_mats(look: Dictionary) -> void:
+	var shirt_mod: Color = look.get("shirt_mod", Color.WHITE)
+	var pants_mod: Color = look.get("pants_mod", Color.WHITE)
+	for mi in meshes:
+		if mi.mesh == null:
+			continue
+		var mname := String(mi.name)
+		for i in mi.mesh.get_surface_count():
+			var base: Material = mi.mesh.surface_get_material(i)
+			if not (base is StandardMaterial3D):
+				continue
+			var m2: StandardMaterial3D = (base as StandardMaterial3D).duplicate()
+			m2.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			m2.roughness = 0.76
+			if mname == "Object_42": # корпус и браслет часов
+				m2.metallic = 0.55
+				m2.roughness = 0.28
+			elif mname == "Object_43": # циферблат часов
+				m2.roughness = 0.22
+			elif mname == "Object_46": # кроссовки
+				m2.roughness = 0.58
+			elif mname == "Object_38": # торс / футболка
+				m2.albedo_color = shirt_mod
+				m2.roughness = 0.80
+			elif mname == "Object_41": # штаны
+				m2.albedo_color = pants_mod
+				m2.roughness = 0.82
+			elif mname == "Object_44": # голова и волосы
+				m2.roughness = 0.68
+			mi.set_surface_override_material(i, m2)
 
 
 ## Существо из res://assets/creatures/<name>.glb. size — желаемая высота в метрах (0 — как в файле).
@@ -251,6 +321,8 @@ static func _xf_to(n: Node3D, top: Node3D) -> Transform3D:
 
 ## Точка крепления к кости: узел, внутри которого метры и оси модели (Y — вдоль кости).
 func attach(bone: String) -> Node3D:
+	if skel != null and skel.find_bone(bone) < 0 and _Retarget.ATTACH_ALIASES.has(bone):
+		bone = _Retarget.ATTACH_ALIASES[bone]
 	var ba := BoneAttachment3D.new()
 	ba.bone_name = bone
 	skel.add_child(ba)

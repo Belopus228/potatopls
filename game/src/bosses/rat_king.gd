@@ -118,9 +118,14 @@ func _ai(dt: float) -> void:
 				summoned += 1
 				Snd.sfx("roar", 0.0, 1.4)
 				Fx.text(get_parent(), global_position + Vector3(0, height + 0.6, 0), "КО МНЕ, СЕРЫЕ!", Color(1, 0.8, 0.6), 0.9)
+				var space := get_world_3d().direct_space_state
+				var r := minf(arena_r - 3.2, 4.0)
 				for i in 2:
-					var a := TAU * i / 2.0 + randf()
-					var pos := arena + Vector3(cos(a), 0, sin(a)) * (arena_r - 1.5)
+					var a := TAU * i / 2.0 + randf_range(-0.4, 0.4)
+					var pos := arena + Vector3(cos(a), 0, sin(a)) * r
+					var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(arena + Vector3(0, 0.5, 0), pos + Vector3(0, 0.5, 0), 1))
+					if not hit.is_empty():
+						pos = arena.lerp(hit["position"], 0.65)
 					pos.y = global_position.y + 0.3
 					G.level.enemy("rat", pos, {"alert": true})
 			if st > 1.3:
